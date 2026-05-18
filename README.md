@@ -1,20 +1,4 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
-
-o	Technologies: Next.js + Neon DB + Drizzle ORM + React + Tailwind
-
-o	Architectural Guidelines: 
-service layer: implement app business logic, used by the RESTful API and Server actions
-USE modular design: split the app into self-contained components, to avoid complex files with too much code
- - Auth: JWT tokens + bcrypt
- - Database: Neon DB + Drizzle ORM
-
-o	User Interface Guidelines: 
- - implement modern UI, responsive design, use server-rendered components in Next.js
- -use server-side rendering, only use client components for browser interaction and forms
+ 
 
 # Описание на проекта
 
@@ -118,4 +102,3 @@ o	User Interface Guidelines:
 - възможност за запазване на конфигурации;
 - потребителски и административни роли;
 - удобен интерфейс и ясен поток на работа.
-
