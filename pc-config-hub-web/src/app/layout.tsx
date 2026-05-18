@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Oxanium, Space_Grotesk } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+import { getCurrentUser } from "@/lib/auth";
+import { logoutAction } from "@/actions/auth";
 
 const displayFont = Oxanium({
   variable: "--font-display",
@@ -19,11 +21,13 @@ export const metadata: Metadata = {
   description: "Build and manage PC configurations.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const userPromise = getCurrentUser();
+
   return (
     <html
       lang="en"
@@ -45,18 +49,7 @@ export default function RootLayout({
               >
                 Home
               </Link>
-              <Link
-                href="/login"
-                className="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#f2f3ff] hover:bg-white/5"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                className="rounded-full border border-[#30f2ff]/60 bg-[#121225] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff] shadow-[0_0_12px_rgba(48,242,255,0.35)] transition hover:-translate-y-0.5"
-              >
-                Register
-              </Link>
+              <AuthNav userPromise={userPromise} />
             </nav>
           </div>
         </header>
@@ -73,5 +66,56 @@ export default function RootLayout({
         </footer>
       </body>
     </html>
+  );
+}
+
+async function AuthNav({
+  userPromise,
+}: {
+  userPromise: ReturnType<typeof getCurrentUser>;
+}) {
+  const user = await userPromise;
+
+  if (!user) {
+    return (
+      <>
+        <Link
+          href="/login"
+          className="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#f2f3ff] hover:bg-white/5"
+        >
+          Login
+        </Link>
+        <Link
+          href="/register"
+          className="rounded-full border border-[#30f2ff]/60 bg-[#121225] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff] shadow-[0_0_12px_rgba(48,242,255,0.35)] transition hover:-translate-y-0.5"
+        >
+          Register
+        </Link>
+      </>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      {user.role === "admin" ? (
+        <Link
+          href="/admin/users"
+          className="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff] hover:bg-white/5"
+        >
+          Admin
+        </Link>
+      ) : null}
+      <div className="rounded-full border border-white/10 bg-[#121225] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
+        Pilot: <span className="text-[#f2f3ff]">{user.name}</span>
+      </div>
+      <form action={logoutAction}>
+        <button
+          type="submit"
+          className="rounded-full border border-[#ff5bf1]/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#ff5bf1] hover:bg-[#ff5bf1]/10"
+        >
+          Logout
+        </button>
+      </form>
+    </div>
   );
 }

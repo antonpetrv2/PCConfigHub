@@ -1,4 +1,5 @@
 import {
+  AnyPgColumn,
   check,
   index,
   integer,
@@ -52,16 +53,19 @@ export const users = pgTable(
     approvalStatus: approvalStatus("approval_status")
       .notNull()
       .default("pending"),
-    approvedByUserId: integer("approved_by_user_id").references(() => users.id, {
-      onDelete: "set null",
-    }),
+    approvedByUserId: integer("approved_by_user_id").references(
+      (): AnyPgColumn => users.id,
+      {
+        onDelete: "set null",
+      }
+    ),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     rejectedAt: timestamp("rejected_at", { withTimezone: true }),
     rejectionReason: text("rejection_reason"),
     requestedRole: userRole("requested_role"),
     roleRequestStatus: approvalStatus("role_request_status"),
     roleReviewedByUserId: integer("role_reviewed_by_user_id").references(
-      () => users.id,
+      (): AnyPgColumn => users.id,
       { onDelete: "set null" }
     ),
     roleReviewedAt: timestamp("role_reviewed_at", { withTimezone: true }),

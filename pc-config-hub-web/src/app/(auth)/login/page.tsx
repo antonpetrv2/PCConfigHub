@@ -1,6 +1,44 @@
-"use client";
+import LoginForm from "./login-form";
+import { loginAction } from "@/actions/auth";
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{
+    error?: string | string[];
+    registered?: string | string[];
+    redirectTo?: string | string[];
+  }>;
+};
+
+const getMessage = (error?: string, registered?: string) => {
+  if (registered === "1") {
+    return "Registration submitted. Awaiting approval before login.";
+  }
+  if (registered === "admin") {
+    return "Admin account created. You can log in now.";
+  }
+  if (error === "missing") {
+    return "Please fill in both fields.";
+  }
+  if (error === "invalid") {
+    return "Invalid email or password.";
+  }
+  if (error === "pending") {
+    return "Your account is pending approval.";
+  }
+  return undefined;
+};
+
+const getParam = (value?: string | string[]) =>
+  Array.isArray(value) ? value[0] : value;
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const message = getMessage(
+    getParam(params.error),
+    getParam(params.registered)
+  );
+  const redirectTo = getParam(params.redirectTo) ?? "/";
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-14">
       <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr]">
@@ -21,35 +59,11 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
-
-        <form className="space-y-5 rounded-3xl border border-white/10 bg-[#121126]/90 p-6 shadow-[0_0_32px_rgba(255,91,241,0.2)]">
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff]">
-            Email
-            <input
-              type="email"
-              name="email"
-              placeholder="you@example.com"
-              className="rounded-2xl border border-white/10 bg-[#0c0b14] px-4 py-3 text-base text-[#f2f3ff]"
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff]">
-            Password
-            <input
-              type="password"
-              name="password"
-              placeholder="Your password"
-              className="rounded-2xl border border-white/10 bg-[#0c0b14] px-4 py-3 text-base text-[#f2f3ff]"
-              required
-            />
-          </label>
-          <button
-            type="submit"
-            className="w-full rounded-full bg-[#30f2ff] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#0c0b14]"
-          >
-            Login
-          </button>
-        </form>
+        <LoginForm
+          action={loginAction}
+          message={message}
+          redirectTo={redirectTo}
+        />
       </div>
     </div>
   );

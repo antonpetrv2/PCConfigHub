@@ -37,7 +37,6 @@ export default function Home() {
           </div>
 
           <div className="relative rounded-3xl border border-white/10 bg-[#0f0e1b]/90 p-6 shadow-[0_0_40px_rgba(48,242,255,0.15)] backdrop-blur">
-            <div className="animate-float-slow absolute -right-10 -top-10 hidden h-32 w-32 rounded-3xl border border-[#30f2ff]/40 bg-[#0f0e1b] shadow-[0_0_24px_rgba(48,242,255,0.4)] sm:block" />
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-[#f2f3ff]">
