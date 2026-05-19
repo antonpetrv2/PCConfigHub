@@ -49,6 +49,24 @@ export default async function RootLayout({
               >
                 Home
               </Link>
+              <Link
+                href="/configurations"
+                className="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#f2f3ff] hover:bg-white/5"
+              >
+                Configurations
+              </Link>
+              <Link
+                href="/catalog"
+                className="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#f2f3ff] hover:bg-white/5"
+              >
+                Parts Catalog
+              </Link>
+              <Link
+                href="/builder"
+                className="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#f2f3ff] hover:bg-white/5"
+              >
+                Builder
+              </Link>
               <AuthNav userPromise={userPromise} />
             </nav>
           </div>
