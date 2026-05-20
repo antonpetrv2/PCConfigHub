@@ -1,11 +1,30 @@
 import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth";
-import { listVisibleConfigurations } from "@/services/configuration-service";
+import { apiFetch } from "@/lib/api/server-fetch";
 
 export default async function ConfigurationsPage() {
   const user = await getCurrentUser();
-  const configurations = await listVisibleConfigurations(user?.id);
+  const configurations = await apiFetch<
+    Array<{
+      id: number;
+      name: string;
+      ownerName: string;
+      ownerUserId: number;
+      visibility: "private" | "public";
+      coverImage: string | null;
+      coverImageAlt: string | null;
+      partsCount: number;
+      estimatedWattage: number;
+    }>
+  >("/api/configs?limit=100");
+
+  const publicConfigs = configurations.filter(
+    (config) => config.visibility === "public"
+  );
+  const myConfigs = user
+    ? configurations.filter((config) => config.ownerUserId === user.id)
+    : [];
 
   return (
     <section className="relative overflow-hidden">
@@ -32,13 +51,13 @@ export default async function ConfigurationsPage() {
           only after moderator approval.
         </div>
 
-        {configurations.length === 0 ? (
+        {publicConfigs.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-[#121126]/90 p-6 text-sm text-[#b3b7d4]">
             No configurations available yet.
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {configurations.map((config) => (
+            {publicConfigs.map((config) => (
               <article
                 key={config.id}
                 className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0f0e1b]/90 shadow-[0_0_30px_rgba(48,242,255,0.12)]"
@@ -47,10 +66,10 @@ export default async function ConfigurationsPage() {
                   href={`/configurations/${config.id}`}
                   className="group relative block aspect-[4/3] w-full overflow-hidden bg-[#15142a]"
                 >
-                  {config.caseImageUrl ? (
+                  {config.coverImage ? (
                     <img
-                      src={config.caseImageUrl}
-                      alt={config.caseImageAlt ?? config.caseName ?? "Case"}
+                      src={config.coverImage}
+                      alt={config.coverImageAlt ?? "Case"}
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                     />
                   ) : (
@@ -71,18 +90,65 @@ export default async function ConfigurationsPage() {
                       {config.visibility === "public" ? "Public" : "Private"}
                     </span>
                   </div>
-                  <p className="text-sm text-[#b3b7d4]">
-                    {config.description ?? "No description yet."}
-                  </p>
                   <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.2em] text-[#30f2ff]">
-                    <span>{config.componentCount} components</span>
-                    <span>Case: {config.caseName ?? "Missing"}</span>
+                    <span>{config.partsCount} parts</span>
+                    <span>{config.estimatedWattage}W est.</span>
                   </div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
+                    By {config.ownerName}
+                  </p>
                 </div>
               </article>
             ))}
           </div>
         )}
+
+        {user && myConfigs.length > 0 ? (
+          <div className="space-y-4">
+            <h2 className="font-[var(--font-display)] text-2xl text-[#f2f3ff]">
+              My configs
+            </h2>
+            <div className="grid gap-6 md:grid-cols-2">
+              {myConfigs.map((config) => (
+                <article
+                  key={`my-${config.id}`}
+                  className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#121126]/90"
+                >
+                  <Link
+                    href={`/configurations/${config.id}`}
+                    className="group relative block aspect-[4/3] w-full overflow-hidden bg-[#15142a]"
+                  >
+                    {config.coverImage ? (
+                      <img
+                        src={config.coverImage}
+                        alt={config.coverImageAlt ?? "Case"}
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
+                        No case image yet
+                      </div>
+                    )}
+                  </Link>
+                  <div className="flex flex-1 flex-col gap-3 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-[var(--font-display)] text-xl text-[#f2f3ff]">
+                        {config.name}
+                      </h3>
+                      <span className="rounded-full border border-white/10 px-3 py-1 text-[0.6rem] uppercase tracking-[0.3em] text-[#b3b7d4]">
+                        {config.visibility === "public" ? "Public" : "Private"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.2em] text-[#30f2ff]">
+                      <span>{config.partsCount} parts</span>
+                      <span>{config.estimatedWattage}W est.</span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   );

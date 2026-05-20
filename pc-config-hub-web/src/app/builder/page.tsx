@@ -1,10 +1,14 @@
 import { getCurrentUser } from "@/lib/auth";
-import { listCatalogComponents } from "@/services/component-service";
-import Configurator from "@/app/builder/configurator";
+import { apiFetch } from "@/lib/api/server-fetch";
+import BuilderClient from "@/app/builder/builder-client";
+import type { ApiCategory } from "@/lib/api/types";
 
 export default async function BuilderPage() {
   const user = await getCurrentUser();
-  const components = await listCatalogComponents(user?.id);
+
+  const parts = await apiFetch<
+    Array<{ id: number; name: string; category: ApiCategory; specs: Record<string, unknown> }>
+  >("/api/parts?limit=200");
 
   return (
     <section className="relative overflow-hidden">
@@ -21,12 +25,12 @@ export default async function BuilderPage() {
           </h1>
           <p className="max-w-2xl text-sm text-[#b3b7d4]">
             {user
-              ? "Mix public and private components, then validate compatibility before saving."
-              : "Select from public components to explore compatibility. Sign in to include your private parts."}
+              ? "Mix public and private parts, then validate compatibility before saving."
+              : "Select from public parts to explore compatibility. Sign in to save configurations."}
           </p>
         </header>
 
-        <Configurator components={components} />
+        <BuilderClient parts={parts} isLoggedIn={Boolean(user)} />
       </div>
     </section>
   );

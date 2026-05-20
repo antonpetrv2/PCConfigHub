@@ -1,5 +1,6 @@
 import {
   AnyPgColumn,
+  boolean,
   check,
   index,
   integer,
@@ -23,6 +24,9 @@ export const approvalStatus = pgEnum("approval_status", [
 export const visibility = pgEnum("visibility", ["private", "public"]);
 export const componentType = pgEnum("component_type", [
   "motherboard",
+  "cpu",
+  "ram",
+  "storage",
   "video_card",
   "sound_card",
   "case",
@@ -173,10 +177,22 @@ export const motherboardDetails = pgTable("motherboard_details", {
     .primaryKey()
     .references(() => components.id, { onDelete: "cascade" }),
   cpuSocket: varchar("cpu_socket", { length: 64 }).notNull(),
+  formFactor: varchar("form_factor", { length: 64 }).notNull(),
   ramType: varchar("ram_type", { length: 64 }).notNull(),
   ramSlots: integer("ram_slots"),
+  pciSlots: text("pci_slots").array(),
   gpuSlotType: varchar("gpu_slot_type", { length: 64 }).notNull(),
   soundSlotType: varchar("sound_slot_type", { length: 64 }).notNull(),
+});
+
+export const cpuDetails = pgTable("cpu_details", {
+  componentId: integer("component_id")
+    .primaryKey()
+    .references(() => components.id, { onDelete: "cascade" }),
+  socket: varchar("socket", { length: 64 }).notNull(),
+  tdp: integer("tdp").notNull(),
+  cores: integer("cores").notNull(),
+  threads: integer("threads").notNull(),
 });
 
 export const videoCardDetails = pgTable("video_card_details", {
@@ -184,7 +200,19 @@ export const videoCardDetails = pgTable("video_card_details", {
     .primaryKey()
     .references(() => components.id, { onDelete: "cascade" }),
   slotType: varchar("slot_type", { length: 64 }).notNull(),
+  tdp: integer("tdp"),
+  lengthMm: integer("length_mm"),
   vramGb: integer("vram_gb"),
+});
+
+export const ramDetails = pgTable("ram_details", {
+  componentId: integer("component_id")
+    .primaryKey()
+    .references(() => components.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 64 }).notNull(),
+  capacityGb: integer("capacity_gb").notNull(),
+  speedMhz: integer("speed_mhz").notNull(),
+  slots: integer("slots").notNull(),
 });
 
 export const soundCardDetails = pgTable("sound_card_details", {
@@ -199,6 +227,9 @@ export const caseDetails = pgTable("case_details", {
     .primaryKey()
     .references(() => components.id, { onDelete: "cascade" }),
   formFactor: varchar("form_factor", { length: 64 }),
+  formFactors: text("form_factors").array(),
+  psuFormFactor: varchar("psu_form_factor", { length: 64 }),
+  maxGpuLength: integer("max_gpu_length"),
 });
 
 export const caseSupportedPsuTypes = pgTable(
@@ -225,7 +256,18 @@ export const powerSupplyDetails = pgTable("power_supply_details", {
     .primaryKey()
     .references(() => components.id, { onDelete: "cascade" }),
   psuType: psuType("psu_type").notNull(),
+  formFactor: varchar("form_factor", { length: 64 }),
+  modular: boolean("modular").notNull().default(false),
   wattage: integer("wattage"),
+});
+
+export const storageDetails = pgTable("storage_details", {
+  componentId: integer("component_id")
+    .primaryKey()
+    .references(() => components.id, { onDelete: "cascade" }),
+  interface: varchar("interface", { length: 64 }).notNull(),
+  capacityGb: integer("capacity_gb").notNull(),
+  type: varchar("type", { length: 32 }).notNull(),
 });
 
 export const componentImages = pgTable(

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { getCurrentUser } from "@/lib/auth";
-import { componentTypeLabels } from "@/types/component-types";
-import { getConfigurationDetails } from "@/services/configuration-service";
+import { apiFetch } from "@/lib/api/server-fetch";
+import { categoryLabels } from "@/lib/api/catalog";
+import type { ApiCategory } from "@/lib/api/types";
 
 type ConfigurationDetailsPageProps = {
   params: Promise<{ id: string }>;
@@ -18,14 +18,35 @@ export default async function ConfigurationDetailsPage({
     notFound();
   }
 
-  const user = await getCurrentUser();
-  const details = await getConfigurationDetails(configurationId, user?.id);
+  const config = await apiFetch<{
+    id: number;
+    name: string;
+    ownerName: string;
+    description: string | null;
+    visibility: "private" | "public";
+    compatibility: { compatible: boolean; warnings: string[]; errors: string[] };
+    coverImage: string | null;
+    coverImageAlt: string | null;
+    parts: Array<{
+      id: number;
+      name: string;
+      category: ApiCategory;
+      visibility: "private" | "public";
+      specs: Record<string, unknown>;
+    }>;
+  }>(`/api/configs/${configurationId}`);
 
-  if (!details) {
+  const comments = await apiFetch<
+    Array<{ id: number; authorUserId: number; body: string; createdAt: string }>
+  >(`/api/configs/${configurationId}/comments`);
+
+  if (!config) {
     notFound();
   }
 
-  const { summary, components } = details;
+  const statusTone = config.compatibility.compatible
+    ? "border-[#30f2ff]/40 bg-[#0f1622] text-[#30f2ff]"
+    : "border-[#ff5bf1]/40 bg-[#1a1122] text-[#ff5bf1]";
 
   return (
     <section className="relative overflow-hidden">
@@ -41,20 +62,23 @@ export default async function ConfigurationDetailsPage({
             Back to configurations
           </Link>
           <h1 className="font-[var(--font-display)] text-4xl text-[#f2f3ff]">
-            {summary.name}
+            {config.name}
           </h1>
           <p className="max-w-2xl text-sm text-[#b3b7d4]">
-            {summary.description ?? "No description yet."}
+            {config.description ?? "No description yet."}
+          </p>
+          <p className="text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
+            By {config.ownerName}
           </p>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0f0e1b]/90 shadow-[0_0_32px_rgba(48,242,255,0.12)]">
             <div className="aspect-[4/3] w-full bg-[#15142a]">
-              {summary.caseImageUrl ? (
+              {config.coverImage ? (
                 <img
-                  src={summary.caseImageUrl}
-                  alt={summary.caseImageAlt ?? summary.caseName ?? "Case"}
+                  src={config.coverImage}
+                  alt={config.coverImageAlt ?? "Case"}
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -65,10 +89,10 @@ export default async function ConfigurationDetailsPage({
             </div>
             <div className="space-y-2 px-5 py-4 text-sm text-[#b3b7d4]">
               <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.2em] text-[#30f2ff]">
-                <span>{summary.componentCount} components</span>
-                <span>{summary.visibility === "public" ? "Public" : "Private"}</span>
+                <span>{config.parts.length} parts</span>
+                <span>{config.visibility === "public" ? "Public" : "Private"}</span>
               </div>
-              <p>Case: {summary.caseName ?? "Missing"}</p>
+              <p>Compatibility: {config.compatibility.compatible ? "Ready" : "Check"}</p>
             </div>
           </div>
 
@@ -77,10 +101,25 @@ export default async function ConfigurationDetailsPage({
               <p className="text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
                 Compatibility
               </p>
-              <p className="mt-2">
-                Each component is matched against motherboard slots and case PSU
-                support. If any mismatch is detected, the build cannot be saved.
-              </p>
+              <div className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${statusTone}`}>
+                {config.compatibility.compatible
+                  ? "Compatible configuration"
+                  : "Compatibility issues detected"}
+              </div>
+              {config.compatibility.errors.length ? (
+                <div className="mt-3 space-y-1 text-xs text-[#ff5bf1]">
+                  {config.compatibility.errors.map((issue) => (
+                    <p key={issue}>{issue}</p>
+                  ))}
+                </div>
+              ) : null}
+              {config.compatibility.warnings.length ? (
+                <div className="mt-3 space-y-1 text-xs text-[#ffd166]">
+                  {config.compatibility.warnings.map((warning) => (
+                    <p key={warning}>{warning}</p>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <div className="rounded-3xl border border-[#ffd166]/40 bg-[#16142b]/80 p-5 text-sm text-[#ffd166]">
               Public configurations and components can be commented on, but comments
@@ -94,44 +133,59 @@ export default async function ConfigurationDetailsPage({
             Included components
           </h2>
           <div className="grid gap-4">
-            {components.map((component) => (
+            {config.parts.map((part) => (
               <div
-                key={component.id}
+                key={part.id}
                 className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#121126]/90 p-4 text-sm text-[#b3b7d4]"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
-                      {componentTypeLabels[component.type]}
+                      {categoryLabels[part.category]}
                     </p>
                     <p className="text-base font-semibold text-[#f2f3ff]">
-                      {component.name}
+                      {part.name}
                     </p>
                   </div>
                   <span className="rounded-full border border-white/10 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-[#b3b7d4]">
-                    {component.visibility === "public" ? "Public" : "Private"}
+                    {part.visibility === "public" ? "Public" : "Private"}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
-                  {component.cpuSocket ? <span>CPU: {component.cpuSocket}</span> : null}
-                  {component.ramType ? <span>RAM: {component.ramType}</span> : null}
-                  {component.gpuSlotType ? (
-                    <span>GPU slot: {component.gpuSlotType}</span>
-                  ) : null}
-                  {component.videoSlotType ? (
-                    <span>GPU card: {component.videoSlotType}</span>
-                  ) : null}
-                  {component.soundSlotType ? (
-                    <span>Sound slot: {component.soundSlotType}</span>
-                  ) : null}
-                  {component.soundCardSlotType ? (
-                    <span>Sound card: {component.soundCardSlotType}</span>
-                  ) : null}
-                  {component.psuType ? <span>PSU: {component.psuType}</span> : null}
+                  {Object.entries(part.specs).map(([key, value]) => (
+                    <span key={`${part.id}-${key}`}>
+                      {key}: {Array.isArray(value) ? value.join(", ") : String(value)}
+                    </span>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="font-[var(--font-display)] text-2xl text-[#f2f3ff]">
+            Comments
+          </h2>
+          {comments.length === 0 ? (
+            <div className="rounded-3xl border border-white/10 bg-[#121126]/90 p-5 text-sm text-[#b3b7d4]">
+              No comments yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="rounded-2xl border border-white/10 bg-[#121126]/90 p-4 text-sm text-[#b3b7d4]"
+                >
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
+                    User #{comment.authorUserId}
+                  </p>
+                  <p className="mt-2 text-sm text-[#f2f3ff]">{comment.body}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

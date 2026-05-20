@@ -1,5 +1,8 @@
 export type ComponentType =
   | "motherboard"
+  | "cpu"
+  | "ram"
+  | "storage"
   | "video_card"
   | "sound_card"
   | "case"
@@ -33,6 +36,9 @@ export type CatalogComponent = {
 
 export const componentTypeLabels: Record<ComponentType, string> = {
   motherboard: "Motherboards",
+  cpu: "Processors",
+  ram: "Memory",
+  storage: "Storage",
   video_card: "Video cards",
   sound_card: "Sound cards",
   case: "Cases",

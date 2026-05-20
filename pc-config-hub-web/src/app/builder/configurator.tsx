@@ -16,6 +16,9 @@ type SelectionState = Record<ComponentType, number | "">;
 
 const componentTypes: ComponentType[] = [
   "motherboard",
+  "cpu",
+  "ram",
+  "storage",
   "video_card",
   "sound_card",
   "case",
@@ -24,6 +27,9 @@ const componentTypes: ComponentType[] = [
 
 const createInitialSelection = (): SelectionState => ({
   motherboard: "",
+  cpu: "",
+  ram: "",
+  storage: "",
   video_card: "",
   sound_card: "",
   case: "",
@@ -48,6 +54,9 @@ export default function Configurator({ components }: ConfiguratorProps) {
       },
       {
         motherboard: [],
+        cpu: [],
+        ram: [],
+        storage: [],
         video_card: [],
         sound_card: [],
         case: [],
