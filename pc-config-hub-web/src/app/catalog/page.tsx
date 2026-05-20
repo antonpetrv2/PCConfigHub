@@ -153,11 +153,6 @@ export default async function CatalogPage() {
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-[#ffd166]/40 bg-[#16142b]/80 px-4 py-3 text-sm text-[#ffd166]">
-          Public components can be commented on, but comments appear only after
-          moderator approval.
-        </div>
-
         {parts.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-[#121126]/90 p-6 text-sm text-[#b3b7d4]">
             No components available yet.

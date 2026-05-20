@@ -221,10 +221,6 @@ export default function Configurator({ components }: ConfiguratorProps) {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-[#ffd166]/40 bg-[#16142b]/80 p-5 text-sm text-[#ffd166]">
-        Public configurations and components can be commented on, but comments
-        appear only after moderator approval.
-      </div>
     </div>
   );
 }

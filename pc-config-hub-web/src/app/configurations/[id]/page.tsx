@@ -91,12 +91,12 @@ export default async function ConfigurationDetailsPage({
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0f0e1b]/90 shadow-[0_0_32px_rgba(48,242,255,0.12)]">
-            <div className="aspect-[4/3] w-full bg-[#15142a]">
+            <div className="aspect-[16/10] w-full bg-[#15142a] p-4">
               {config.coverImage ? (
                 <img
                   src={config.coverImage}
                   alt={config.coverImageAlt ?? "Case"}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
@@ -137,10 +137,6 @@ export default async function ConfigurationDetailsPage({
                   ))}
                 </div>
               ) : null}
-            </div>
-            <div className="rounded-3xl border border-[#ffd166]/40 bg-[#16142b]/80 p-5 text-sm text-[#ffd166]">
-              Public configurations and components can be commented on, but comments
-              appear only after moderator approval.
             </div>
           </aside>
         </div>

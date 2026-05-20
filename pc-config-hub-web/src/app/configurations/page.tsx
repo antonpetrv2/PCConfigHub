@@ -46,11 +46,6 @@ export default async function ConfigurationsPage() {
           </p>
         </header>
 
-        <div className="rounded-2xl border border-[#ffd166]/40 bg-[#16142b]/80 px-4 py-3 text-sm text-[#ffd166]">
-          Public configurations and components can be commented on, but comments appear
-          only after moderator approval.
-        </div>
-
         {publicConfigs.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-[#121126]/90 p-6 text-sm text-[#b3b7d4]">
             No configurations available yet.
@@ -64,13 +59,13 @@ export default async function ConfigurationsPage() {
               >
                 <Link
                   href={`/configurations/${config.id}`}
-                  className="group relative block aspect-[4/3] w-full overflow-hidden bg-[#15142a]"
+                  className="group relative block aspect-[16/10] w-full bg-[#15142a] p-3"
                 >
                   {config.coverImage ? (
                     <img
                       src={config.coverImage}
                       alt={config.coverImageAlt ?? "Case"}
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.02]"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
@@ -116,13 +111,13 @@ export default async function ConfigurationsPage() {
                 >
                   <Link
                     href={`/configurations/${config.id}`}
-                    className="group relative block aspect-[4/3] w-full overflow-hidden bg-[#15142a]"
+                    className="group relative block aspect-[16/10] w-full bg-[#15142a] p-3"
                   >
                     {config.coverImage ? (
                       <img
                         src={config.coverImage}
                         alt={config.coverImageAlt ?? "Case"}
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.02]"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
