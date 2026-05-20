@@ -6,9 +6,21 @@ import type { ApiCategory } from "@/lib/api/types";
 export default async function BuilderPage() {
   const user = await getCurrentUser();
 
-  const parts = await apiFetch<
-    Array<{ id: number; name: string; category: ApiCategory; specs: Record<string, unknown> }>
-  >("/api/parts?limit=200");
+  let parts: Array<{
+    id: number;
+    name: string;
+    category: ApiCategory;
+    specs: Record<string, unknown>;
+  }> = [];
+  let loadError: string | null = null;
+
+  try {
+    parts = await apiFetch<
+      Array<{ id: number; name: string; category: ApiCategory; specs: Record<string, unknown> }>
+    >("/api/parts?limit=200");
+  } catch (error) {
+    loadError = error instanceof Error ? error.message : "Failed to load parts.";
+  }
 
   return (
     <section className="relative overflow-hidden">
@@ -30,7 +42,13 @@ export default async function BuilderPage() {
           </p>
         </header>
 
-        <BuilderClient parts={parts} isLoggedIn={Boolean(user)} />
+        {loadError ? (
+          <div className="rounded-3xl border border-[#ff5bf1]/40 bg-[#1a1122] px-5 py-4 text-sm text-[#ff5bf1]">
+            Unable to load parts right now. Check server logs for details.
+          </div>
+        ) : (
+          <BuilderClient parts={parts} isLoggedIn={Boolean(user)} />
+        )}
       </div>
     </section>
   );
