@@ -21,26 +21,57 @@ type CompatibilityResult = {
 type BuilderClientProps = {
   parts: Part[];
   isLoggedIn: boolean;
+  configId?: number;
+  initialName?: string;
+  initialDescription?: string | null;
+  initialVisibility?: "private" | "public";
+  initialPartIds?: number[];
+  onSaved?: () => void;
+  submitLabel?: string;
 };
 
-export default function BuilderClient({ parts, isLoggedIn }: BuilderClientProps) {
+const emptySelection = (): Record<ApiCategory, Part | null> => ({
+  motherboard: null,
+  cpu: null,
+  gpu: null,
+  ram: null,
+  psu: null,
+  case: null,
+  storage: null,
+  soundcard: null,
+});
+
+export default function BuilderClient({
+  parts,
+  isLoggedIn,
+  configId,
+  initialName = "",
+  initialDescription = "",
+  initialVisibility = "private",
+  initialPartIds = [],
+  onSaved,
+  submitLabel,
+}: BuilderClientProps) {
   const [selection, setSelection] = useState<Record<ApiCategory, Part | null>>(
-    () => ({
-      motherboard: null,
-      cpu: null,
-      gpu: null,
-      ram: null,
-      psu: null,
-      case: null,
-      storage: null,
-      soundcard: null,
-    })
+    () => {
+      const nextSelection = emptySelection();
+      for (const partId of initialPartIds) {
+        const part = parts.find((item) => item.id === partId);
+        if (part) {
+          nextSelection[part.category] = part;
+        }
+      }
+      return nextSelection;
+    }
   );
   const [activeCategory, setActiveCategory] = useState<ApiCategory | null>(null);
   const [compatibility, setCompatibility] = useState<CompatibilityResult | null>(null);
-  const [configName, setConfigName] = useState("");
-  const [visibility, setVisibility] = useState<"private" | "public">("private");
+  const [configName, setConfigName] = useState(initialName);
+  const [description, setDescription] = useState(initialDescription ?? "");
+  const [visibility, setVisibility] =
+    useState<"private" | "public">(initialVisibility);
   const [status, setStatus] = useState<string | null>(null);
+  const isEditing = Boolean(configId);
 
   const partOptions = useMemo(() => {
     return parts.reduce<Record<ApiCategory, Part[]>>(
@@ -65,25 +96,42 @@ export default function BuilderClient({ parts, isLoggedIn }: BuilderClientProps)
     Object.values(selection)
       .filter((part): part is Part => Boolean(part))
       .map((part) => part.id), [selection]);
+  const displayedCompatibility = selectedIds.length ? compatibility : null;
 
   useEffect(() => {
     if (!selectedIds.length) {
-      setCompatibility(null);
       return;
     }
 
     const controller = new AbortController();
     const runCheck = async () => {
-      const response = await fetch("/api/configs/check-compatibility", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ parts: selectedIds }),
-        signal: controller.signal,
-      });
+      try {
+        const response = await fetch("/api/configs/check-compatibility", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ parts: selectedIds }),
+          signal: controller.signal,
+        });
 
-      const json = await response.json();
-      if (response.ok) {
-        setCompatibility(json.data);
+        const json = await response.json().catch(() => null);
+        if (response.ok) {
+          setCompatibility(json.data);
+          return;
+        }
+
+        setCompatibility({
+          compatible: false,
+          warnings: [],
+          errors: [json?.error ?? "Compatibility check failed."],
+        });
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setCompatibility({
+            compatible: false,
+            warnings: [],
+            errors: ["Compatibility check failed."],
+          });
+        }
       }
     };
 
@@ -109,11 +157,12 @@ export default function BuilderClient({ parts, isLoggedIn }: BuilderClientProps)
       return;
     }
 
-    const response = await fetch("/api/configs", {
-      method: "POST",
+    const response = await fetch(isEditing ? `/api/configs/${configId}` : "/api/configs", {
+      method: isEditing ? "PUT" : "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         name: configName,
+        description: description || undefined,
         visibility,
         parts: selectedIds,
       }),
@@ -122,6 +171,11 @@ export default function BuilderClient({ parts, isLoggedIn }: BuilderClientProps)
     const json = await response.json();
     if (!response.ok) {
       setStatus(json.error ?? "Failed to save configuration.");
+      return;
+    }
+
+    if (onSaved) {
+      onSaved();
       return;
     }
 
@@ -186,6 +240,13 @@ export default function BuilderClient({ parts, isLoggedIn }: BuilderClientProps)
                 value={configName}
                 onChange={(event) => setConfigName(event.target.value)}
               />
+              <textarea
+                className="w-full rounded-2xl border border-white/10 bg-[#0f0e1b] px-4 py-2"
+                placeholder="Description"
+                rows={3}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+              />
               <select
                 className="w-full rounded-2xl border border-white/10 bg-[#0f0e1b] px-4 py-2"
                 value={visibility}
@@ -204,22 +265,22 @@ export default function BuilderClient({ parts, isLoggedIn }: BuilderClientProps)
               Compatibility status
             </p>
             <div className="mt-3 space-y-3 text-sm">
-              {compatibility?.errors?.length ? (
+              {displayedCompatibility?.errors?.length ? (
                 <div className="rounded-2xl border border-[#ff5bf1]/40 bg-[#1a1122] px-4 py-3 text-[#ff5bf1]">
-                  {compatibility.errors.map((issue) => (
+                  {displayedCompatibility.errors.map((issue) => (
                     <p key={issue}>{issue}</p>
                   ))}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-[#30f2ff]/40 bg-[#0f1622] px-4 py-3 text-[#30f2ff]">
-                  {compatibility
+                  {displayedCompatibility
                     ? "All selected components are compatible."
                     : "Select parts to run compatibility check."}
                 </div>
               )}
-              {compatibility?.warnings?.length ? (
+              {displayedCompatibility?.warnings?.length ? (
                 <div className="rounded-2xl border border-[#ffd166]/40 bg-[#1d1b33] px-4 py-3 text-[#ffd166]">
-                  {compatibility.warnings.map((warning) => (
+                  {displayedCompatibility.warnings.map((warning) => (
                     <p key={warning}>{warning}</p>
                   ))}
                 </div>
@@ -233,7 +294,7 @@ export default function BuilderClient({ parts, isLoggedIn }: BuilderClientProps)
               onClick={handleSave}
               className="mt-4 w-full rounded-full bg-[#30f2ff] px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#0c0b14]"
             >
-              Save configuration
+              {submitLabel ?? (isEditing ? "Save changes" : "Save configuration")}
             </button>
           </div>
         </div>

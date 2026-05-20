@@ -22,6 +22,10 @@ const isSafeRedirect = (value: string | null) => {
 
 export const proxy = async (request: NextRequest) => {
   const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   const isPublicPath = PUBLIC_PATHS.has(pathname);
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 

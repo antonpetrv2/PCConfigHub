@@ -18,9 +18,9 @@ import {
   storageSpecSchema,
 } from "@/lib/api/schemas";
 import { getPagination } from "@/lib/api/pagination";
-import { saveUpload } from "@/lib/api/upload";
 import { ApiError } from "@/lib/api/errors";
 import { listParts, createPart } from "@/services/api/parts-service";
+import { uploadFile } from "@/services/api/upload-service";
 
 export const runtime = "nodejs";
 
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     const imageUrl =
       imageFile instanceof File && imageFile.size > 0
-        ? await saveUpload(imageFile)
+        ? (await uploadFile(imageFile)).url
         : imageUrlFromPayload;
 
     const id = await createPart({

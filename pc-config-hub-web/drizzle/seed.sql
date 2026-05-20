@@ -54,12 +54,14 @@ INSERT INTO components (
 INSERT INTO motherboard_details (
   component_id,
   cpu_socket,
+  form_factor,
   ram_type,
   ram_slots,
+  pci_slots,
   gpu_slot_type,
   sound_slot_type
 ) VALUES
-  (1, 'LGA1700', 'DDR5', 4, 'PCIe 4.0 x16', 'PCIe 4.0 x1');
+  (1, 'LGA1700', 'ATX', 'DDR5', 4, ARRAY['PCIe 4.0 x16', 'PCIe 4.0 x1'], 'PCIe 4.0 x16', 'PCIe 4.0 x1');
 
 INSERT INTO video_card_details (component_id, slot_type, vram_gb) VALUES
   (2, 'PCIe 4.0 x16', 16);

@@ -143,6 +143,12 @@ export default async function ConfigurationsPage() {
                       <span>{config.partsCount} parts</span>
                       <span>{config.estimatedWattage}W est.</span>
                     </div>
+                    <Link
+                      href={`/configurations/${config.id}`}
+                      className="mt-2 w-fit rounded-full border border-[#30f2ff]/50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff]"
+                    >
+                      Open / manage
+                    </Link>
                   </div>
                 </article>
               ))}

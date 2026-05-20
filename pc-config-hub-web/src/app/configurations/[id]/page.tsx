@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import ConfigurationActions from "@/app/configurations/configuration-actions";
+import { getCurrentUser } from "@/lib/auth";
 import { apiFetch } from "@/lib/api/server-fetch";
 import { categoryLabels } from "@/lib/api/catalog";
 import type { ApiCategory } from "@/lib/api/types";
@@ -18,10 +20,12 @@ export default async function ConfigurationDetailsPage({
     notFound();
   }
 
+  const user = await getCurrentUser();
   const config = await apiFetch<{
     id: number;
     name: string;
     ownerName: string;
+    ownerUserId: number;
     description: string | null;
     visibility: "private" | "public";
     compatibility: { compatible: boolean; warnings: string[]; errors: string[] };
@@ -36,6 +40,15 @@ export default async function ConfigurationDetailsPage({
     }>;
   }>(`/api/configs/${configurationId}`);
 
+  const allParts = await apiFetch<
+    Array<{
+      id: number;
+      name: string;
+      category: ApiCategory;
+      specs: Record<string, unknown>;
+    }>
+  >("/api/parts?limit=200");
+
   const comments = await apiFetch<
     Array<{ id: number; authorUserId: number; body: string; createdAt: string }>
   >(`/api/configs/${configurationId}/comments`);
@@ -47,6 +60,7 @@ export default async function ConfigurationDetailsPage({
   const statusTone = config.compatibility.compatible
     ? "border-[#30f2ff]/40 bg-[#0f1622] text-[#30f2ff]"
     : "border-[#ff5bf1]/40 bg-[#1a1122] text-[#ff5bf1]";
+  const canManage = user?.id === config.ownerUserId;
 
   return (
     <section className="relative overflow-hidden">
@@ -70,6 +84,9 @@ export default async function ConfigurationDetailsPage({
           <p className="text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
             By {config.ownerName}
           </p>
+          {canManage ? (
+            <ConfigurationActions config={config} parts={allParts} />
+          ) : null}
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">

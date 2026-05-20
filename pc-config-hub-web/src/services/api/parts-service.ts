@@ -26,6 +26,7 @@ import {
 import { toDbComponentType, fromDbComponentType } from "@/lib/api/category-map";
 import { ApiError } from "@/lib/api/errors";
 import type { ApiCategory } from "@/lib/api/types";
+import { deleteObjectByUrl } from "@/services/api/upload-service";
 
 export type PartImage = {
   url: string;
@@ -638,6 +639,7 @@ export const updatePart = async (data: {
   description?: string;
   visibility: "private" | "public";
   specs: Record<string, unknown>;
+  imageUrl?: string | null;
 }) => {
   const [existing] = await db
     .select({ id: components.id, ownerUserId: components.ownerUserId })
@@ -670,7 +672,32 @@ export const updatePart = async (data: {
 
   await replacePartDetails(data.partId, data.category, data.specs);
 
+  if (data.imageUrl !== undefined) {
+    await replacePartImage(data.partId, data.imageUrl);
+  }
+
   return data.partId;
+};
+
+const replacePartImage = async (partId: number, imageUrl: string | null) => {
+  const imageRows = await db
+    .select({ url: componentImages.url })
+    .from(componentImages)
+    .where(eq(componentImages.componentId, partId));
+
+  for (const row of imageRows) {
+    await deleteObjectByUrl(row.url);
+  }
+
+  await db.delete(componentImages).where(eq(componentImages.componentId, partId));
+
+  if (imageUrl) {
+    await db.insert(componentImages).values({
+      componentId: partId,
+      url: imageUrl,
+      sortOrder: 0,
+    });
+  }
 };
 
 const replacePartDetails = async (
@@ -869,6 +896,19 @@ export const deletePart = async (data: { partId: number; userId: number }) => {
   if (!existing || existing.ownerUserId !== data.userId) {
     throw new ApiError("Part not found", 404);
   }
+
+  const imageRows = await db
+    .select({ url: componentImages.url })
+    .from(componentImages)
+    .where(eq(componentImages.componentId, data.partId));
+
+  for (const row of imageRows) {
+    await deleteObjectByUrl(row.url);
+  }
+
+  await db
+    .delete(componentImages)
+    .where(eq(componentImages.componentId, data.partId));
 
   await db
     .update(components)

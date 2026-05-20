@@ -1,43 +1,91 @@
 import { getCurrentUser } from "@/lib/auth";
-import { listCatalogComponents } from "@/services/component-service";
-import { componentTypeLabels } from "@/types/component-types";
+import AddPartLauncher from "@/app/parts/add-part-launcher";
+import { categoryLabels, categoryOrder } from "@/lib/api/catalog";
+import type { ApiCategory } from "@/lib/api/types";
+import { listParts } from "@/services/api/parts-service";
 
 const compactSpecs = (values: Array<string | null | undefined>) =>
   values.filter((value): value is string => Boolean(value));
 
-const formatSpecs = (
-  component: Awaited<ReturnType<typeof listCatalogComponents>>[number]
+const formatValue = (value: unknown) => {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length ? value.join(", ") : null;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+
+  return String(value);
+};
+
+const spec = (
+  specs: Record<string, unknown>,
+  key: string,
+  label: string,
+  suffix = ""
 ) => {
-  switch (component.type) {
+  const value = formatValue(specs[key]);
+  return value ? `${label}: ${value}${suffix}` : null;
+};
+
+const formatSpecs = (part: {
+  category: ApiCategory;
+  specs: Record<string, unknown>;
+}) => {
+  switch (part.category) {
     case "motherboard":
       return compactSpecs([
-        component.cpuSocket ? `CPU socket: ${component.cpuSocket}` : null,
-        component.ramType ? `RAM: ${component.ramType}` : null,
-        component.ramSlots ? `RAM slots: ${component.ramSlots}` : null,
-        component.gpuSlotType ? `GPU slot: ${component.gpuSlotType}` : null,
-        component.soundSlotType ? `Sound slot: ${component.soundSlotType}` : null,
+        spec(part.specs, "socket", "CPU socket"),
+        spec(part.specs, "ramType", "RAM"),
+        spec(part.specs, "ramSlots", "RAM slots"),
+        spec(part.specs, "pciSlots", "PCI slots"),
       ]);
-    case "video_card":
+    case "cpu":
       return compactSpecs([
-        component.videoSlotType ? `Slot: ${component.videoSlotType}` : null,
-        component.vramGb ? `VRAM: ${component.vramGb} GB` : null,
+        spec(part.specs, "socket", "Socket"),
+        spec(part.specs, "cores", "Cores"),
+        spec(part.specs, "threads", "Threads"),
+        spec(part.specs, "tdp", "TDP", "W"),
       ]);
-    case "sound_card":
+    case "gpu":
       return compactSpecs([
-        component.soundCardSlotType ? `Slot: ${component.soundCardSlotType}` : null,
+        spec(part.specs, "pciSlot", "Slot"),
+        spec(part.specs, "vram", "VRAM", " GB"),
+        spec(part.specs, "length", "Length", " mm"),
+        spec(part.specs, "tdp", "TDP", "W"),
+      ]);
+    case "ram":
+      return compactSpecs([
+        spec(part.specs, "type", "Type"),
+        spec(part.specs, "capacity", "Capacity", " GB"),
+        spec(part.specs, "speed", "Speed", " MHz"),
+        spec(part.specs, "slots", "Slots"),
+      ]);
+    case "psu":
+      return compactSpecs([
+        spec(part.specs, "formFactor", "Form factor"),
+        spec(part.specs, "wattage", "Wattage", "W"),
+        spec(part.specs, "modular", "Modular"),
       ]);
     case "case":
       return compactSpecs([
-        component.formFactor ? `Form factor: ${component.formFactor}` : null,
-        component.psuTypes?.length
-          ? `PSU support: ${component.psuTypes.join(", ")}`
-          : null,
+        spec(part.specs, "formFactor", "Form factors"),
+        spec(part.specs, "psuFormFactor", "PSU support"),
+        spec(part.specs, "maxGpuLength", "Max GPU", " mm"),
       ]);
-    case "power_supply":
+    case "storage":
       return compactSpecs([
-        component.psuType ? `PSU type: ${component.psuType}` : null,
-        component.wattage ? `Wattage: ${component.wattage}W` : null,
+        spec(part.specs, "interface", "Interface"),
+        spec(part.specs, "capacity", "Capacity", " GB"),
+        spec(part.specs, "type", "Type"),
       ]);
+    case "soundcard":
+      return compactSpecs([spec(part.specs, "pciSlot", "Slot")]);
     default:
       return [];
   }
@@ -45,18 +93,27 @@ const formatSpecs = (
 
 export default async function CatalogPage() {
   const user = await getCurrentUser();
-  const components = await listCatalogComponents(user?.id);
+  const { parts } = await listParts({
+    userId: user?.id,
+    page: 1,
+    limit: 100,
+  });
 
-  const grouped = components.reduce<Record<string, typeof components>>(
-    (acc, component) => {
-      const key = component.type;
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(component);
+  const grouped = parts.reduce<Record<ApiCategory, typeof parts>>(
+    (acc, part) => {
+      acc[part.category].push(part);
       return acc;
     },
-    {}
+    {
+      motherboard: [],
+      cpu: [],
+      gpu: [],
+      ram: [],
+      psu: [],
+      case: [],
+      storage: [],
+      soundcard: [],
+    }
   );
 
   return (
@@ -81,14 +138,18 @@ export default async function CatalogPage() {
 
         {user ? (
           <div className="rounded-3xl border border-[#30f2ff]/40 bg-[#0f0e1b]/80 p-6 text-sm text-[#b3b7d4] shadow-[0_0_20px_rgba(48,242,255,0.2)]">
-            <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
-              Upload parts
-            </p>
-            <p className="mt-2">
-              You can upload new components and images from the builder once the
-              import flow is enabled. Until then, keep your specs ready for
-              approval.
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
+                  Upload parts
+                </p>
+                <p className="mt-2">
+                  Add new components with specs, visibility, and an image. Public parts
+                  require approval before showing up to everyone.
+                </p>
+              </div>
+              <AddPartLauncher />
+            </div>
           </div>
         ) : null}
 
@@ -97,42 +158,43 @@ export default async function CatalogPage() {
           moderator approval.
         </div>
 
-        {components.length === 0 ? (
+        {parts.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-[#121126]/90 p-6 text-sm text-[#b3b7d4]">
             No components available yet.
           </div>
         ) : (
           <div className="space-y-10">
-            {Object.entries(componentTypeLabels).map(([type, label]) => {
-              const items = grouped[type] ?? [];
+            {categoryOrder.map((category) => {
+              const items = grouped[category];
               if (!items.length) {
                 return null;
               }
 
               return (
-                <section key={type} className="space-y-4">
+                <section key={category} className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="font-[var(--font-display)] text-2xl text-[#f2f3ff]">
-                      {label}
+                      {categoryLabels[category]}
                     </h2>
                     <span className="text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
                       {items.length} items
                     </span>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                    {items.map((component) => {
-                      const specs = formatSpecs(component);
+                    {items.map((part) => {
+                      const specs = formatSpecs(part);
+                      const canEdit = user?.id === part.ownerUserId;
 
                       return (
                         <article
-                          key={component.id}
+                          key={part.id}
                           className="flex gap-4 rounded-3xl border border-white/10 bg-[#121126]/90 p-4"
                         >
                           <div className="h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-[#15142a]">
-                            {component.imageUrl ? (
+                            {part.images[0]?.url ? (
                               <img
-                                src={component.imageUrl}
-                                alt={component.imageAlt ?? component.name}
+                                src={part.images[0].url}
+                                alt={part.images[0].altText ?? part.name}
                                 className="h-full w-full object-cover"
                               />
                             ) : (
@@ -145,20 +207,21 @@ export default async function CatalogPage() {
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className="text-base font-semibold text-[#f2f3ff]">
-                                  {component.name}
+                                  {part.name}
                                 </p>
                                 <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
-                                  {component.visibility === "public" ? "Public" : "Private"}
+                                  {part.visibility === "public" ? "Public" : "Private"}
                                 </p>
                               </div>
+                              {canEdit ? <AddPartLauncher part={part} /> : null}
                             </div>
                             <p className="text-sm text-[#b3b7d4]">
-                              {component.description ?? "No description yet."}
+                              {part.description ?? "No description yet."}
                             </p>
                             {specs.length ? (
                               <div className="flex flex-wrap gap-2 text-[0.65rem] uppercase tracking-[0.2em] text-[#b3b7d4]">
-                                {specs.map((spec) => (
-                                  <span key={spec}>{spec}</span>
+                                {specs.map((item) => (
+                                  <span key={item}>{item}</span>
                                 ))}
                               </div>
                             ) : null}

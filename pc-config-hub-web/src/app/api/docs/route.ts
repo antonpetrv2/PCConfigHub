@@ -37,6 +37,13 @@ const html = `<!DOCTYPE html>
   </section>
 
   <section>
+    <h2>Uploads</h2>
+    <ul>
+      <li><code>POST /api/upload</code> - multipart: file</li>
+    </ul>
+  </section>
+
+  <section>
     <h2>Configurations</h2>
     <ul>
       <li><code>GET /api/configs</code> - query: page, limit</li>
@@ -73,7 +80,7 @@ const html = `<!DOCTYPE html>
     </ul>
   </section>
 
-  <p class="note">Image uploads are stored in /public/uploads. The payload field is JSON.</p>
+  <p class="note">Image uploads are stored in R2. The payload field is JSON.</p>
 </body>
 </html>`;
 

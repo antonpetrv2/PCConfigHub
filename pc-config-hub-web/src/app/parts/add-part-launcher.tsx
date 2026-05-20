@@ -2,10 +2,15 @@
 
 import { useState } from "react";
 
-import AddPartForm from "@/app/parts/add-part-form";
+import AddPartForm, { type EditablePart } from "@/app/parts/add-part-form";
 
-export default function AddPartLauncher() {
+type AddPartLauncherProps = {
+  part?: EditablePart;
+};
+
+export default function AddPartLauncher({ part }: AddPartLauncherProps) {
   const [open, setOpen] = useState(false);
+  const isEditing = Boolean(part);
 
   return (
     <>
@@ -14,9 +19,11 @@ export default function AddPartLauncher() {
         onClick={() => setOpen(true)}
         className="rounded-full bg-[#30f2ff] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0c0b14]"
       >
-        Add new part
+        {isEditing ? "Edit" : "Add new part"}
       </button>
-      <AddPartForm isOpen={open} onClose={() => setOpen(false)} />
+      {open ? (
+        <AddPartForm isOpen={open} onClose={() => setOpen(false)} part={part} />
+      ) : null}
     </>
   );
 }

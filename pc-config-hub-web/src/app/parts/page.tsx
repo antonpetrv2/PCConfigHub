@@ -84,6 +84,9 @@ export default async function PartsPage({ searchParams }: PartsPageProps) {
     Array<{
       id: number;
       name: string;
+      manufacturer: string | null;
+      model: string | null;
+      description: string | null;
       category: ApiCategory;
       ownerUserId: number;
       visibility: "private" | "public";
@@ -162,6 +165,7 @@ export default async function PartsPage({ searchParams }: PartsPageProps) {
               <div className="grid gap-4 md:grid-cols-2">
                 {parts.map((part) => {
                   const specs = getSpecsPreview(part).filter(Boolean);
+                  const canEdit = user?.id === part.ownerUserId;
                   return (
                     <article
                       key={part.id}
@@ -190,9 +194,12 @@ export default async function PartsPage({ searchParams }: PartsPageProps) {
                               {categoryLabels[part.category]}
                             </p>
                           </div>
-                          <span className="rounded-full border border-white/10 px-3 py-1 text-[0.6rem] uppercase tracking-[0.3em] text-[#b3b7d4]">
-                            {part.visibility === "public" ? "Public" : "Private"}
-                          </span>
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            <span className="rounded-full border border-white/10 px-3 py-1 text-[0.6rem] uppercase tracking-[0.3em] text-[#b3b7d4]">
+                              {part.visibility === "public" ? "Public" : "Private"}
+                            </span>
+                            {canEdit ? <AddPartLauncher part={part} /> : null}
+                          </div>
                         </div>
                         <div className="flex flex-wrap gap-2 text-[0.65rem] uppercase tracking-[0.2em] text-[#b3b7d4]">
                           {specs.map((item) => (

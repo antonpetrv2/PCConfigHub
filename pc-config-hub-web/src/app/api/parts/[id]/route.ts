@@ -108,6 +108,10 @@ export async function PUT(
       description: base.description,
       visibility: base.visibility,
       specs,
+      imageUrl:
+        typeof body?.imageUrl === "string" || body?.imageUrl === null
+          ? body.imageUrl
+          : undefined,
     });
 
     return ok({ id: partId });
