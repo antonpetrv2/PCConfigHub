@@ -2,29 +2,32 @@ import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppShell } from '@/components/AppShell';
+import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { categoryLabels, categoryOrder } from '@/constants/catalog';
 import { colors } from '@/constants/theme';
 
 export default function BuilderScreen() {
   return (
-    <AppShell title="Builder" showBack>
-      <Text style={styles.subtitle}>
-        Select parts from the same categories used by the web builder and catalog.
-      </Text>
+    <ProtectedScreen>
+      <AppShell title="Builder" showBack>
+        <Text style={styles.subtitle}>
+          Select parts from the same categories used by the web builder and catalog.
+        </Text>
 
-      <View style={styles.grid}>
-        {categoryOrder.map((category) => (
-          <View key={category} style={styles.categoryCard}>
-            <Text style={styles.categoryName}>{categoryLabels[category]}</Text>
-            <Text style={styles.categoryStatus}>Not selected</Text>
-          </View>
-        ))}
-      </View>
+        <View style={styles.grid}>
+          {categoryOrder.map((category) => (
+            <View key={category} style={styles.categoryCard}>
+              <Text style={styles.categoryName}>{categoryLabels[category]}</Text>
+              <Text style={styles.categoryStatus}>Not selected</Text>
+            </View>
+          ))}
+        </View>
 
-      <Link href="/configurations" style={styles.link}>
-        View configurations
-      </Link>
-    </AppShell>
+        <Link href="/configurations" style={styles.link}>
+          View configurations
+        </Link>
+      </AppShell>
+    </ProtectedScreen>
   );
 }
 

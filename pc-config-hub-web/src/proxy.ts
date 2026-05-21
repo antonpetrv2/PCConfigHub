@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { verifyAuthToken } from "@/lib/jwt";
+import { apiCorsHeaders } from "@/lib/api/response";
 
 const AUTH_COOKIE_NAME = "auth_token";
 const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/setup-admin"]);
@@ -23,6 +24,13 @@ const isSafeRedirect = (value: string | null) => {
 export const proxy = async (request: NextRequest) => {
   const { pathname } = request.nextUrl;
   if (pathname.startsWith("/api/")) {
+    if (request.method === "OPTIONS") {
+      return new NextResponse(null, {
+        status: 204,
+        headers: apiCorsHeaders,
+      });
+    }
+
     return NextResponse.next();
   }
 

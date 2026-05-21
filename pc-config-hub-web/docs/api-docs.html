@@ -276,6 +276,10 @@ category: "motherboard" | "cpu" | "gpu" | "ram" | "psu" | "case" | "storage" | "
               <div class="endpoint-head"><h3><span class="method get">GET</span> <code>/api/auth/me</code></h3></div>
               <p>Returns the current user or <code>401</code> when unauthenticated.</p>
             </article>
+            <article class="endpoint">
+              <div class="endpoint-head"><h3><span class="method post">POST</span> <code>/api/auth/logout</code></h3></div>
+              <p>Clears the <code>auth_token</code> cookie and returns <code>{ "success": true }</code>. Bearer-token clients should also clear their locally stored token.</p>
+            </article>
           </div>
         </section>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
 type LoginFormProps = {
@@ -27,6 +28,8 @@ export default function LoginForm({
   message,
   redirectTo,
 }: LoginFormProps) {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <form
       action={action}
@@ -50,13 +53,22 @@ export default function LoginForm({
       </label>
       <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff]">
         Password
-        <input
-          type="password"
-          name="password"
-          placeholder="Your password"
-          className="rounded-2xl border border-white/10 bg-[#0c0b14] px-4 py-3 text-base text-[#f2f3ff]"
-          required
-        />
+        <span className="flex overflow-hidden rounded-2xl border border-white/10 bg-[#0c0b14] focus-within:border-[#30f2ff]/60">
+          <input
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="Your password"
+            className="min-w-0 flex-1 bg-transparent px-4 py-3 text-base normal-case tracking-normal text-[#f2f3ff] outline-none"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((value) => !value)}
+            className="border-l border-white/10 px-4 text-xs font-semibold uppercase tracking-[0.18em] text-[#ff5bf1] transition hover:bg-[#ff5bf1]/10"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </span>
       </label>
       <SubmitButton />
     </form>

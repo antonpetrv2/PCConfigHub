@@ -1,10 +1,13 @@
 import { Link } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/auth/AuthContext';
 import { AppShell } from '@/components/AppShell';
 import { colors } from '@/constants/theme';
 
 export default function HomeScreen() {
+  const { isAuthenticated, logout, user } = useAuth();
+
   return (
     <AppShell>
       <View style={styles.hero}>
@@ -16,12 +19,21 @@ export default function HomeScreen() {
         </Text>
 
         <View style={styles.actions}>
-          <Link href="/login" style={styles.primaryLink}>
-            Login
-          </Link>
+          {isAuthenticated ? (
+            <Pressable onPress={() => void logout()} style={styles.primaryButton}>
+              <Text style={styles.primaryButtonText}>Logout</Text>
+            </Pressable>
+          ) : (
+            <Link href="/login" style={styles.primaryLink}>
+              Login
+            </Link>
+          )}
           <Link href="/configurations" style={styles.secondaryLink}>
             Configurations
           </Link>
+          {isAuthenticated ? (
+            <Text style={styles.sessionText}>Pilot: {user?.name ?? user?.email}</Text>
+          ) : null}
         </View>
       </View>
 
@@ -85,6 +97,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     textTransform: 'uppercase',
   },
+  primaryButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 999,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+  },
+  primaryButtonText: {
+    color: colors.background,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+  },
   secondaryLink: {
     borderColor: 'rgba(255, 91, 241, 0.6)',
     borderRadius: 999,
@@ -96,6 +121,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: 22,
     paddingVertical: 14,
+    textTransform: 'uppercase',
+  },
+  sessionText: {
+    alignSelf: 'center',
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   panel: {
