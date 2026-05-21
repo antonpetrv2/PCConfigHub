@@ -1,98 +1,162 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { AppShell } from '@/components/AppShell';
+import { colors } from '@/constants/theme';
 
 export default function HomeScreen() {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <AppShell>
+      <View style={styles.hero}>
+        <Text style={styles.eyebrow}>Retro-futurist hardware lab</Text>
+        <Text style={styles.title}>Prototype your next build in a neon-lit command bay.</Text>
+        <Text style={styles.subtitle}>
+          Scan parts, validate compatibility, and publish configurations once your rig is
+          lab-certified.
+        </Text>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        <View style={styles.actions}>
+          <Link href="/login" style={styles.primaryLink}>
+            Login
+          </Link>
+          <Link href="/configurations" style={styles.secondaryLink}>
+            Configurations
+          </Link>
+        </View>
+      </View>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <View style={styles.panel}>
+        <View style={styles.panelHeader}>
+          <Text style={styles.panelTitle}>Active build</Text>
+          <Text style={styles.badge}>Certified</Text>
+        </View>
+        {['Motherboard', 'CPU', 'GPU'].map((item) => (
+          <View key={item} style={styles.partRow}>
+            <Text style={styles.partName}>{item}</Text>
+            <Text style={styles.partStatus}>Ready</Text>
+          </View>
+        ))}
+        <Text style={styles.powerDraw}>Compatibility status: ready for validation</Text>
+      </View>
+    </AppShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  hero: {
+    gap: 18,
     justifyContent: 'center',
-    flexDirection: 'row',
+    minHeight: 360,
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
+  eyebrow: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 3,
     textTransform: 'uppercase',
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  title: {
+    color: colors.text,
+    fontSize: 38,
+    fontWeight: '800',
+    lineHeight: 44,
+  },
+  subtitle: {
+    color: colors.muted,
+    fontSize: 17,
+    lineHeight: 25,
+    maxWidth: 620,
+  },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 8,
+  },
+  primaryLink: {
+    backgroundColor: colors.accent,
+    borderRadius: 999,
+    color: colors.background,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.6,
+    overflow: 'hidden',
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    textTransform: 'uppercase',
+  },
+  secondaryLink: {
+    borderColor: 'rgba(255, 91, 241, 0.6)',
+    borderRadius: 999,
+    borderWidth: 1,
+    color: colors.accentTwo,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.6,
+    overflow: 'hidden',
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    textTransform: 'uppercase',
+  },
+  panel: {
+    backgroundColor: 'rgba(18, 17, 38, 0.94)',
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 12,
+    padding: 18,
+  },
+  panelHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  panelTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  badge: {
+    backgroundColor: 'rgba(48, 242, 255, 0.16)',
+    borderRadius: 999,
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  partRow: {
+    alignItems: 'center',
+    backgroundColor: colors.panelSoft,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  partName: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  partStatus: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  powerDraw: {
+    backgroundColor: 'rgba(255, 209, 102, 0.1)',
+    borderColor: 'rgba(255, 209, 102, 0.4)',
+    borderRadius: 8,
+    borderWidth: 1,
+    color: colors.accentThree,
+    fontSize: 14,
+    lineHeight: 20,
+    overflow: 'hidden',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
 });

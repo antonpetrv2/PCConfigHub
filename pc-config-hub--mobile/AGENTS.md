@@ -6,6 +6,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v55.0.0/ before 
 o	Technologies: React Native + Expo + Expo Router
 o	Back-end: RESTful API, with "Bearer token" auth
 o	Back-end API source code: ../pc-config-hub-web/src/app/api
+API dcos: http://localhost:3000/api/docs
 o	modular design: split the app into meaningful components, to avoid too much code in a single file and reuse repeating code
 
 o	Mobile UI Guidelines: 
