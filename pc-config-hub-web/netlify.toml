@@ -1,6 +1,7 @@
 [build]
-  command = "npm run build --workspace pc-config-hub-web"
-  publish = "pc-config-hub-web/.next"
+  base = "pc-config-hub-web"
+  command = "npm run build --workspaces=false"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "22"
