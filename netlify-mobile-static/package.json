@@ -1,5 +1,8 @@
 {
   "name": "pc-config-hub-mobile-static-deploy",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "build": "node build.js"
+  }
 }
