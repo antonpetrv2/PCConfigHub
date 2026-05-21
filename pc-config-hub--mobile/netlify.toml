@@ -1,7 +1,7 @@
 [build]
-  base = "pc-config-hub--mobile"
-  command = "npm run build --workspaces=false"
-  publish = "dist"
+  base = "netlify-mobile-static"
+  command = "node patch-api-url.js"
+  publish = "../pc-config-hub--mobile/dist"
 
 [build.environment]
   NODE_VERSION = "22"

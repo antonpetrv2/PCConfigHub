@@ -12,6 +12,8 @@ next-env.d.ts
 # Expo / React Native
 .expo/
 dist/
+!pc-config-hub--mobile/dist/
+!pc-config-hub--mobile/dist/**
 web-build/
 ios/
 android/
