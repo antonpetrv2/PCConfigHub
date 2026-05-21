@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build --workspaces=false"
-  publish = "dist"
+  command = "npm run build --workspace pc-config-hub--mobile"
+  publish = "pc-config-hub--mobile/dist"
 
 [build.environment]
   NODE_VERSION = "22"
