@@ -1,10 +1,11 @@
 [build]
   base = "pc-config-hub-web"
-  command = "npm run build"
+  command = "npm run build --workspaces=false"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "22"
+  NPM_FLAGS = "--workspaces=false --include=optional"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
