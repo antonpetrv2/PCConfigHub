@@ -1,5 +1,4 @@
 [build]
-  base = "pc-config-hub-web"
   command = "npm run build --workspaces=false"
   publish = ".next"
 
