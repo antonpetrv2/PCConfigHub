@@ -3,6 +3,7 @@ import type { PropsWithChildren } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAuth } from '@/auth/AuthContext';
 import { colors } from '@/constants/theme';
 
 type AppShellProps = PropsWithChildren<{
@@ -13,6 +14,7 @@ type AppShellProps = PropsWithChildren<{
 export function AppShell({ children, title, showBack = false }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { isAuthenticated, logout } = useAuth();
 
   const goBack = () => {
     if (router.canGoBack()) {
@@ -20,6 +22,11 @@ export function AppShell({ children, title, showBack = false }: AppShellProps) {
       return;
     }
 
+    router.replace('/');
+  };
+
+  const handleLogout = async () => {
+    await logout();
     router.replace('/');
   };
 
@@ -45,7 +52,13 @@ export function AppShell({ children, title, showBack = false }: AppShellProps) {
             active={pathname === '/configurations'}
           />
           <NavLink href="/builder" label="Builder" active={pathname === '/builder'} />
-          <NavLink href="/login" label="Login" active={pathname === '/login'} />
+          {isAuthenticated ? (
+            <Pressable onPress={() => void handleLogout()} style={styles.navButton}>
+              <Text style={styles.navButtonText}>Logout</Text>
+            </Pressable>
+          ) : (
+            <NavLink href="/login" label="Login" active={pathname === '/login'} />
+          )}
         </View>
       </View>
 
@@ -131,6 +144,20 @@ const styles = StyleSheet.create({
   navLinkActive: {
     backgroundColor: 'rgba(48, 242, 255, 0.12)',
     color: colors.accent,
+  },
+  navButton: {
+    borderColor: 'rgba(255, 91, 241, 0.6)',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  navButtonText: {
+    color: colors.accentTwo,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   scroll: {
     flex: 1,

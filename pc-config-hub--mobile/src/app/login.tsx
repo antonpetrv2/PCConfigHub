@@ -8,7 +8,7 @@ import { colors } from '@/constants/theme';
 import { ApiClientError } from '@/services/api';
 
 export default function LoginScreen() {
-  const { isAuthenticated, login, user } = useAuth();
+  const { isAuthenticated, login, logout, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -44,57 +44,63 @@ export default function LoginScreen() {
     <AppShell title="Login" showBack>
       <View style={styles.card}>
         {isAuthenticated ? (
-          <Text style={styles.successText}>Signed in as {user?.name ?? user?.email}.</Text>
+          <>
+            <Text style={styles.successText}>Signed in as {user?.name ?? user?.email}.</Text>
+            <Link href="/builder" style={styles.secondaryLink}>
+              Continue to builder
+            </Link>
+            <Pressable onPress={() => void logout()} style={styles.logoutButton}>
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </Pressable>
+          </>
         ) : (
-          <Text style={styles.subtitle}>Sign in to manage your saved PC configurations.</Text>
-        )}
+          <>
+            <Text style={styles.subtitle}>Sign in to manage your saved PC configurations.</Text>
 
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!isSubmitting}
-          keyboardType="email-address"
-          onChangeText={setEmail}
-          placeholder="Email"
-          placeholderTextColor={colors.muted}
-          style={styles.input}
-          value={email}
-        />
-        <View style={styles.passwordField}>
-          <TextInput
-            editable={!isSubmitting}
-            onChangeText={setPassword}
-            onSubmitEditing={handleSubmit}
-            placeholder="Password"
-            placeholderTextColor={colors.muted}
-            secureTextEntry={!showPassword}
-            style={styles.passwordInput}
-            value={password}
-          />
-          <Pressable
-            onPress={() => setShowPassword((value) => !value)}
-            style={styles.passwordToggle}>
-            <Text style={styles.passwordToggleText}>{showPassword ? 'Hide' : 'Show'}</Text>
-          </Pressable>
-        </View>
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isSubmitting}
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="Email"
+              placeholderTextColor={colors.muted}
+              style={styles.input}
+              value={email}
+            />
+            <View style={styles.passwordField}>
+              <TextInput
+                editable={!isSubmitting}
+                onChangeText={setPassword}
+                onSubmitEditing={handleSubmit}
+                placeholder="Password"
+                placeholderTextColor={colors.muted}
+                secureTextEntry={!showPassword}
+                style={styles.passwordInput}
+                value={password}
+              />
+              <Pressable
+                onPress={() => setShowPassword((value) => !value)}
+                style={styles.passwordToggle}>
+                <Text style={styles.passwordToggleText}>{showPassword ? 'Hide' : 'Show'}</Text>
+              </Pressable>
+            </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <Pressable
-          disabled={isSubmitting}
-          onPress={handleSubmit}
-          style={[styles.primaryButton, isSubmitting && styles.disabledButton]}>
-          <Text style={styles.primaryButtonText}>{isSubmitting ? 'Signing in...' : 'Login'}</Text>
-        </Pressable>
+            <Pressable
+              disabled={isSubmitting}
+              onPress={handleSubmit}
+              style={[styles.primaryButton, isSubmitting && styles.disabledButton]}>
+              <Text style={styles.primaryButtonText}>
+                {isSubmitting ? 'Signing in...' : 'Login'}
+              </Text>
+            </Pressable>
 
-        {isAuthenticated ? (
-          <Link href="/builder" style={styles.secondaryLink}>
-            Continue to builder
-          </Link>
-        ) : (
-          <Text style={styles.helperText}>
-            New users can register in the web app at http://localhost:3000/register.
-          </Text>
+            <Text style={styles.helperText}>
+              New users can register in the web app at http://localhost:3000/register.
+            </Text>
+          </>
         )}
       </View>
     </AppShell>
@@ -205,6 +211,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.4,
     marginTop: 4,
+    textTransform: 'uppercase',
+  },
+  logoutButton: {
+    alignSelf: 'flex-start',
+    borderColor: 'rgba(255, 91, 241, 0.6)',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  logoutButtonText: {
+    color: colors.accentTwo,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.4,
     textTransform: 'uppercase',
   },
   helperText: {
