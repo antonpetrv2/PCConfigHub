@@ -10,6 +10,47 @@ const getSpecString = (value: unknown) =>
 const getSpecStringArray = (value: unknown) =>
   Array.isArray(value) ? value.filter((item) => typeof item === "string") : null;
 
+const parsePciSlot = (value: string) => {
+  const normalized = value.toLowerCase().replace(/\s+/g, " ").trim();
+  const generationMatch = normalized.match(/(?:pcie|pci-e|pci express)?\s*(\d)(?:\.0)?/);
+  const lanesMatch = normalized.match(/x\s*(\d+)/);
+
+  return {
+    raw: normalized,
+    generation: generationMatch ? Number(generationMatch[1]) : null,
+    lanes: lanesMatch ? Number(lanesMatch[1]) : null,
+    isPcie:
+      normalized.includes("pcie") ||
+      normalized.includes("pci-e") ||
+      normalized.includes("pci express") ||
+      Boolean(lanesMatch),
+  };
+};
+
+const hasCompatiblePciSlot = (motherboardSlots: string[], gpuSlot: string) => {
+  const gpu = parsePciSlot(gpuSlot);
+
+  return motherboardSlots.some((slot) => {
+    const motherboardSlot = parsePciSlot(slot);
+
+    if (motherboardSlot.raw === gpu.raw) {
+      return true;
+    }
+
+    if (!motherboardSlot.isPcie || !gpu.isPcie) {
+      return false;
+    }
+
+    if (motherboardSlot.lanes && gpu.lanes) {
+      return motherboardSlot.lanes >= gpu.lanes;
+    }
+
+    // If the DB has only the PCIe generation, e.g. "4", do not reject the build
+    // as incompatible. Treat it as enough signal that this is a PCIe slot family.
+    return Boolean(motherboardSlot.generation && gpu.generation);
+  });
+};
+
 export const checkCompatibility = (parts: PartRecord[]): CompatibilityResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -33,7 +74,7 @@ export const checkCompatibility = (parts: PartRecord[]): CompatibilityResult => 
     slot.toLowerCase()
   );
   const gpuSlot = getSpecString(gpu?.specs.pciSlot)?.toLowerCase();
-  if (pciSlots && gpuSlot && !pciSlots.includes(gpuSlot)) {
+  if (pciSlots && gpuSlot && !hasCompatiblePciSlot(pciSlots, gpuSlot)) {
     errors.push("GPU PCI slot is not available on the motherboard.");
   } else if (motherboard && gpu && (!pciSlots || !gpuSlot)) {
     warnings.push("Missing PCI slot data for GPU compatibility.");

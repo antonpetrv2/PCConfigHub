@@ -38,56 +38,68 @@ const initialState: FormState = {
   manufacturer: "",
   model: "",
   description: "",
-  visibility: "private",
+  visibility: "public",
   category: "motherboard",
   specs: {},
 };
 
 const specFields: Record<
   ApiCategory,
-  Array<{ key: string; label: string; placeholder?: string }>
+  Array<{ key: string; label: string; options?: string[]; placeholder?: string }>
 > = {
   motherboard: [
-    { key: "socket", label: "CPU socket" },
-    { key: "formFactor", label: "Form factor" },
+    { key: "socket", label: "CPU socket", options: ["AM4", "AM5", "LGA1200", "LGA1700", "LGA1851"] },
+    { key: "formFactor", label: "Form factor", options: ["ATX", "Micro-ATX", "Mini-ITX", "E-ATX"] },
     { key: "ramSlots", label: "RAM slots" },
-    { key: "ramType", label: "RAM type" },
-    { key: "pciSlots", label: "PCI slots (comma-separated)" },
+    { key: "ramType", label: "RAM type", options: ["DDR4", "DDR5"] },
+    {
+      key: "pciSlots",
+      label: "PCIe slots",
+      options: [
+        "PCIe 5.0 x16, PCIe 4.0 x1",
+        "PCIe 4.0 x16, PCIe 3.0 x1",
+        "PCIe 3.0 x16, PCIe 2.0 x1",
+      ],
+    },
   ],
   cpu: [
-    { key: "socket", label: "Socket" },
+    { key: "socket", label: "Socket", options: ["AM4", "AM5", "LGA1200", "LGA1700", "LGA1851"] },
     { key: "tdp", label: "TDP (W)" },
     { key: "cores", label: "Cores" },
     { key: "threads", label: "Threads" },
   ],
   gpu: [
-    { key: "pciSlot", label: "PCI slot" },
+    { key: "pciSlot", label: "PCIe slot", options: ["PCIe 5.0 x16", "PCIe 4.0 x16", "PCIe 3.0 x16"] },
     { key: "tdp", label: "TDP (W)" },
     { key: "vram", label: "VRAM (GB)" },
     { key: "length", label: "Length (mm)" },
   ],
   ram: [
-    { key: "type", label: "RAM type" },
+    { key: "type", label: "RAM type", options: ["DDR4", "DDR5"] },
     { key: "capacity", label: "Capacity (GB)" },
     { key: "speed", label: "Speed (MHz)" },
     { key: "slots", label: "Slots" },
   ],
   psu: [
     { key: "wattage", label: "Wattage" },
-    { key: "formFactor", label: "Form factor (ATX/SFX)" },
-    { key: "modular", label: "Modular (true/false)" },
+    { key: "formFactor", label: "Form factor", options: ["ATX", "SFX", "TFX", "Flex ATX"] },
+    { key: "modular", label: "Modular", options: ["true", "false"] },
   ],
   case: [
-    { key: "formFactor", label: "Form factors (comma-separated)" },
-    { key: "psuFormFactor", label: "PSU form factor" },
+    {
+      key: "formFactor",
+      label: "Supported motherboard form factors",
+      options: ["ATX, Micro-ATX, Mini-ITX", "Micro-ATX, Mini-ITX", "Mini-ITX", "E-ATX, ATX, Micro-ATX, Mini-ITX"],
+    },
+    { key: "psuFormFactor", label: "PSU form factor", options: ["ATX", "SFX", "TFX", "Flex ATX"] },
     { key: "maxGpuLength", label: "Max GPU length (mm)" },
   ],
   storage: [
-    { key: "interface", label: "Interface" },
+    { key: "interface", label: "Interface", options: ["NVMe PCIe", "SATA III", "M.2 SATA", "U.2"] },
     { key: "capacity", label: "Capacity (GB)" },
-    { key: "type", label: "Type (SSD/HDD/NVMe)" },
+    { key: "type", label: "Type", options: ["SSD", "HDD", "NVMe SSD"] },
   ],
-  soundcard: [{ key: "pciSlot", label: "PCI slot" }],
+  soundcard: [{ key: "pciSlot", label: "PCIe slot", options: ["PCIe 5.0 x1", "PCIe 4.0 x1", "PCIe 3.0 x1", "PCIe 2.0 x1"] }],
 };
 
 const toFormState = (part?: EditablePart): FormState => {
@@ -376,8 +388,8 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
               }))
             }
           >
-            <option value="private">Private</option>
             <option value="public">Public</option>
+            <option value="private">Private</option>
           </select>
         </div>
 
@@ -394,13 +406,29 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
         <div className="grid gap-3 md:grid-cols-2">
           {fields.map((field) => (
             <div key={field.key} className="space-y-1">
-              <input
-                className="rounded-xl border border-white/10 bg-[#121126] px-4 py-2"
-                placeholder={field.label}
-                value={form.specs[field.key] ?? ""}
-                onChange={(event) => setSpec(field.key, event.target.value)}
-                required
-              />
+              {field.options ? (
+                <select
+                  className="w-full rounded-xl border border-white/10 bg-[#121126] px-4 py-2"
+                  value={form.specs[field.key] ?? ""}
+                  onChange={(event) => setSpec(field.key, event.target.value)}
+                  required
+                >
+                  <option value="">{field.label}</option>
+                  {field.options.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className="w-full rounded-xl border border-white/10 bg-[#121126] px-4 py-2"
+                  placeholder={field.label}
+                  value={form.specs[field.key] ?? ""}
+                  onChange={(event) => setSpec(field.key, event.target.value)}
+                  required
+                />
+              )}
               {errors[`specs.${field.key}`] ? (
                 <p className="text-xs text-[#ff5bf1]">
                   {errors[`specs.${field.key}`]}

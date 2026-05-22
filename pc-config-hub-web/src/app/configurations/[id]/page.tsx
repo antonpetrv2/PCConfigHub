@@ -45,6 +45,7 @@ export default async function ConfigurationDetailsPage({
       category: ApiCategory;
       visibility: "private" | "public";
       specs: Record<string, unknown>;
+      images: Array<{ url: string; altText: string | null }>;
     }>;
   }>(`/api/configs/${configurationId}`);
 
@@ -164,27 +165,46 @@ export default async function ConfigurationDetailsPage({
             {config.parts.map((part) => (
               <div
                 key={part.id}
-                className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#121126]/90 p-4 text-sm text-[#b3b7d4]"
+                className="flex gap-4 rounded-2xl border border-white/10 bg-[#121126]/90 p-4 text-sm text-[#b3b7d4]"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
-                      {categoryLabels[part.category]}
-                    </p>
-                    <p className="text-base font-semibold text-[#f2f3ff]">
-                      {part.name}
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-[#b3b7d4]">
-                    {part.visibility === "public" ? "Public" : "Private"}
-                  </span>
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#15142a]">
+                  {part.images?.[0]?.url ? (
+                    <img
+                      src={part.images[0].url}
+                      alt={part.images[0].altText ?? part.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[0.5rem] uppercase tracking-[0.24em] text-[#b3b7d4]">
+                      No image
+                    </div>
+                  )}
                 </div>
-                <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
-                  {Object.entries(part.specs).map(([key, value]) => (
-                    <span key={`${part.id}-${key}`}>
-                      {key}: {Array.isArray(value) ? value.join(", ") : String(value)}
+
+                <div className="flex min-w-0 flex-1 flex-col gap-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
+                        {categoryLabels[part.category]}
+                      </p>
+                      <Link
+                        href={`/parts/${part.id}`}
+                        className="mt-1 block truncate text-base font-semibold text-[#f2f3ff] hover:text-[#30f2ff]"
+                      >
+                        {part.name}
+                      </Link>
+                    </div>
+                    <span className="rounded-full border border-white/10 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-[#b3b7d4]">
+                      {part.visibility === "public" ? "Public" : "Private"}
                     </span>
-                  ))}
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
+                    {Object.entries(part.specs).map(([key, value]) => (
+                      <span key={`${part.id}-${key}`}>
+                        {key}: {Array.isArray(value) ? value.join(", ") : String(value)}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}
