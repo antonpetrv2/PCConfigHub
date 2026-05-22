@@ -1,10 +1,11 @@
 import Link from "next/link";
 
+import Pagination from "@/app/pagination";
 import { getCurrentUser } from "@/lib/auth";
-import { apiFetch } from "@/lib/api/server-fetch";
 import { categoryLabels, categoryOrder } from "@/lib/api/catalog";
 import type { ApiCategory } from "@/lib/api/types";
 import AddPartLauncher from "@/app/parts/add-part-launcher";
+import { listParts } from "@/services/api/parts-service";
 
 const getSpecsPreview = (part: {
   category: ApiCategory;
@@ -72,28 +73,28 @@ const spec = (value: unknown, label: string) => {
 };
 
 type PartsPageProps = {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; page?: string }>;
+};
+
+const pageSize = 12;
+
+const parsePage = (value?: string) => {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
 };
 
 export default async function PartsPage({ searchParams }: PartsPageProps) {
   const params = await searchParams;
   const category = params.category as ApiCategory | undefined;
+  const page = parsePage(params.page);
   const user = await getCurrentUser();
 
-  const parts = await apiFetch<
-    Array<{
-      id: number;
-      name: string;
-      manufacturer: string | null;
-      model: string | null;
-      description: string | null;
-      category: ApiCategory;
-      ownerUserId: number;
-      visibility: "private" | "public";
-      specs: Record<string, unknown>;
-      images: Array<{ url: string; altText: string | null }>;
-    }>
-  >(`/api/parts?limit=100${category ? `&category=${category}` : ""}`);
+  const { parts, total } = await listParts({
+    userId: user?.id,
+    category,
+    page,
+    limit: pageSize,
+  });
 
   const isLoggedIn = Boolean(user);
 
@@ -188,7 +189,12 @@ export default async function PartsPage({ searchParams }: PartsPageProps) {
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="text-base font-semibold text-[#f2f3ff]">
-                              {part.name}
+                              <Link
+                                href={`/parts/${part.id}`}
+                                className="hover:text-[#30f2ff]"
+                              >
+                                {part.name}
+                              </Link>
                             </p>
                             <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
                               {categoryLabels[part.category]}
@@ -206,12 +212,25 @@ export default async function PartsPage({ searchParams }: PartsPageProps) {
                             <span key={item as string}>{item}</span>
                           ))}
                         </div>
+                        <Link
+                          href={`/parts/${part.id}`}
+                          className="mt-auto w-fit text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff]"
+                        >
+                          Details and comments
+                        </Link>
                       </div>
                     </article>
                   );
                 })}
               </div>
             )}
+            <Pagination
+              basePath="/parts"
+              limit={pageSize}
+              page={page}
+              searchParams={{ category }}
+              total={total}
+            />
           </div>
         </div>
       </div>

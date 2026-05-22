@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
+import { and, eq, isNull } from "drizzle-orm";
 
+import { db } from "@/db/client";
+import { users } from "@/db/schema";
 import { verifyAuthToken } from "@/lib/jwt";
 
 export type ApiAuthUser = {
@@ -39,6 +42,16 @@ export const requireUser = async (request: NextRequest) => {
 
   const payload = await verifyAuthToken(token);
   if (!payload) {
+    return null;
+  }
+
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, Number(payload.sub)), isNull(users.deletedAt)))
+    .limit(1);
+
+  if (!user) {
     return null;
   }
 

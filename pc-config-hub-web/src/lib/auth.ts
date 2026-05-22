@@ -1,6 +1,10 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { and, eq, isNull } from "drizzle-orm";
+
+import { db } from "@/db/client";
+import { users } from "@/db/schema";
 import { verifyAuthToken } from "@/lib/jwt";
 
 export const AUTH_COOKIE_NAME = "auth_token";
@@ -21,6 +25,16 @@ export const getCurrentUser = async (): Promise<CurrentUser | null> => {
 
   const payload = await verifyAuthToken(token);
   if (!payload) {
+    return null;
+  }
+
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, Number(payload.sub)), isNull(users.deletedAt)))
+    .limit(1);
+
+  if (!user) {
     return null;
   }
 

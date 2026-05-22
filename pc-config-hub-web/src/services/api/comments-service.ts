@@ -1,7 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { comments } from "@/db/schema";
+import { comments, users } from "@/db/schema";
 import { ApiError } from "@/lib/api/errors";
 
 export const listPartComments = async (partId: number) => {
@@ -9,10 +9,13 @@ export const listPartComments = async (partId: number) => {
     .select({
       id: comments.id,
       authorUserId: comments.authorUserId,
+      authorName: users.displayName,
+      authorEmail: users.email,
       body: comments.body,
       createdAt: comments.createdAt,
     })
     .from(comments)
+    .innerJoin(users, eq(users.id, comments.authorUserId))
     .where(
       and(
         eq(comments.componentId, partId),
@@ -28,10 +31,13 @@ export const listConfigComments = async (configId: number) => {
     .select({
       id: comments.id,
       authorUserId: comments.authorUserId,
+      authorName: users.displayName,
+      authorEmail: users.email,
       body: comments.body,
       createdAt: comments.createdAt,
     })
     .from(comments)
+    .innerJoin(users, eq(users.id, comments.authorUserId))
     .where(
       and(
         eq(comments.configurationId, configId),

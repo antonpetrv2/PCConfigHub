@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import {
   approveUserAction,
+  deleteUserAction,
   rejectUserAction,
   updateUserRoleAction,
 } from "@/actions/admin";
@@ -46,11 +47,24 @@ export default async function AdminUsersPage({
         <p className="max-w-2xl text-sm text-[#b3b7d4]">
           Approve new registrations, reject accounts, and assign user roles.
         </p>
+        <div>
+          <a
+            href="/moderator"
+            className="inline-flex rounded-full border border-[#30f2ff]/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#30f2ff] hover:bg-[#30f2ff]/10"
+          >
+            Open review queue
+          </a>
+        </div>
       </div>
 
       {error === "self-demote" ? (
         <div className="mb-5 rounded-2xl border border-[#ffd166]/40 bg-[#1d1b33] px-4 py-3 text-sm text-[#ffd166]">
           You cannot remove your own admin role.
+        </div>
+      ) : null}
+      {error === "self-delete" ? (
+        <div className="mb-5 rounded-2xl border border-[#ffd166]/40 bg-[#1d1b33] px-4 py-3 text-sm text-[#ffd166]">
+          You cannot delete your own account.
         </div>
       ) : null}
 
@@ -118,6 +132,15 @@ export default async function AdminUsersPage({
                     className="rounded-full bg-[#ffd166] px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#0c0b14]"
                   >
                     Save
+                  </button>
+                </form>
+                <form action={deleteUserAction}>
+                  <input type="hidden" name="userId" value={account.id} />
+                  <button
+                    type="submit"
+                    className="rounded-full border border-red-400/60 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-red-300 hover:bg-red-400/10"
+                  >
+                    Delete
                   </button>
                 </form>
               </div>

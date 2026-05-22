@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import {
   createAdminUser,
+  deleteUserAndContent,
   hasAdminUser,
   setUserApprovalStatus,
   setUserRole,
@@ -112,6 +113,19 @@ export const updateUserRoleAction = async (formData: FormData) => {
     role,
     reviewedByUserId: admin.id,
   });
+
+  revalidatePath("/admin/users");
+};
+
+export const deleteUserAction = async (formData: FormData) => {
+  const admin = await requireAdmin();
+  const userId = parseUserId(formData);
+
+  if (userId === admin.id) {
+    redirect("/admin/users?error=self-delete");
+  }
+
+  await deleteUserAndContent(userId);
 
   revalidatePath("/admin/users");
 };

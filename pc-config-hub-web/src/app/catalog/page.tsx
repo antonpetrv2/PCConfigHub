@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { getCurrentUser } from "@/lib/auth";
+import Pagination from "@/app/pagination";
 import AddPartLauncher from "@/app/parts/add-part-launcher";
 import { categoryLabels, categoryOrder } from "@/lib/api/catalog";
 import type { ApiCategory } from "@/lib/api/types";
@@ -91,12 +94,25 @@ const formatSpecs = (part: {
   }
 };
 
-export default async function CatalogPage() {
+type CatalogPageProps = {
+  searchParams: Promise<{ page?: string }>;
+};
+
+const pageSize = 12;
+
+const parsePage = (value?: string) => {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+};
+
+export default async function CatalogPage({ searchParams }: CatalogPageProps) {
+  const params = await searchParams;
+  const page = parsePage(params.page);
   const user = await getCurrentUser();
-  const { parts } = await listParts({
+  const { parts, total } = await listParts({
     userId: user?.id,
-    page: 1,
-    limit: 100,
+    page,
+    limit: pageSize,
   });
 
   const grouped = parts.reduce<Record<ApiCategory, typeof parts>>(
@@ -202,7 +218,12 @@ export default async function CatalogPage() {
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className="text-base font-semibold text-[#f2f3ff]">
-                                  {part.name}
+                                  <Link
+                                    href={`/parts/${part.id}`}
+                                    className="hover:text-[#30f2ff]"
+                                  >
+                                    {part.name}
+                                  </Link>
                                 </p>
                                 <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
                                   {part.visibility === "public" ? "Public" : "Private"}
@@ -220,6 +241,12 @@ export default async function CatalogPage() {
                                 ))}
                               </div>
                             ) : null}
+                            <Link
+                              href={`/parts/${part.id}`}
+                              className="mt-auto w-fit text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff]"
+                            >
+                              Details and comments
+                            </Link>
                           </div>
                         </article>
                       );
@@ -228,6 +255,12 @@ export default async function CatalogPage() {
                 </section>
               );
             })}
+            <Pagination
+              basePath="/catalog"
+              limit={pageSize}
+              page={page}
+              total={total}
+            />
           </div>
         )}
       </div>

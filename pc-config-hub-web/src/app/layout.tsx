@@ -123,8 +123,17 @@ async function AuthNav({
           Admin
         </Link>
       ) : null}
-      <div className="rounded-full border border-white/10 bg-[#121225] px-4 py-2 text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
-        Pilot: <span className="text-[#f2f3ff]">{user.name}</span>
+      {user.role === "moderator" ? (
+        <Link
+          href="/moderator"
+          className="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff] hover:bg-white/5"
+        >
+          Moderator
+        </Link>
+      ) : null}
+      <div className="flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#121225] px-4 py-2 text-xs text-[#b3b7d4]">
+        <span className="uppercase tracking-[0.2em]">Logged in:</span>
+        <span className="font-semibold text-[#f2f3ff]">{user.name}</span>
       </div>
       <form action={logoutAction}>
         <button

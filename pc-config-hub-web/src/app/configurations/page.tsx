@@ -1,30 +1,33 @@
 import Link from "next/link";
 
+import Pagination from "@/app/pagination";
 import { getCurrentUser } from "@/lib/auth";
-import { apiFetch } from "@/lib/api/server-fetch";
+import { listConfigs } from "@/services/api/configs-service";
 
-export default async function ConfigurationsPage() {
+type ConfigurationsPageProps = {
+  searchParams: Promise<{ page?: string }>;
+};
+
+const pageSize = 9;
+
+const parsePage = (value?: string) => {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+};
+
+export default async function ConfigurationsPage({
+  searchParams,
+}: ConfigurationsPageProps) {
+  const params = await searchParams;
+  const page = parsePage(params.page);
   const user = await getCurrentUser();
-  const configurations = await apiFetch<
-    Array<{
-      id: number;
-      name: string;
-      ownerName: string;
-      ownerUserId: number;
-      visibility: "private" | "public";
-      coverImage: string | null;
-      coverImageAlt: string | null;
-      partsCount: number;
-      estimatedWattage: number;
-    }>
-  >("/api/configs?limit=100");
+  const { configs, total } = await listConfigs({
+    userId: user?.id,
+    page,
+    limit: pageSize,
+  });
 
-  const publicConfigs = configurations.filter(
-    (config) => config.visibility === "public"
-  );
-  const myConfigs = user
-    ? configurations.filter((config) => config.ownerUserId === user.id)
-    : [];
+  const myConfigs = user ? configs.filter((config) => config.ownerUserId === user.id) : [];
 
   return (
     <section className="relative overflow-hidden">
@@ -46,20 +49,20 @@ export default async function ConfigurationsPage() {
           </p>
         </header>
 
-        {publicConfigs.length === 0 ? (
+        {configs.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-[#121126]/90 p-6 text-sm text-[#b3b7d4]">
             No configurations available yet.
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2">
-            {publicConfigs.map((config) => (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {configs.map((config) => (
               <article
                 key={config.id}
-                className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0f0e1b]/90 shadow-[0_0_30px_rgba(48,242,255,0.12)]"
+                className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0f0e1b]/90 shadow-[0_0_22px_rgba(48,242,255,0.1)]"
               >
                 <Link
                   href={`/configurations/${config.id}`}
-                  className="group relative block aspect-[16/10] w-full bg-[#15142a] p-3"
+                  className="group relative block aspect-[16/8] w-full bg-[#15142a] p-2"
                 >
                   {config.coverImage ? (
                     <img
@@ -72,24 +75,24 @@ export default async function ConfigurationsPage() {
                       No case image yet
                     </div>
                   )}
-                  <div className="absolute bottom-4 left-4 rounded-full border border-white/10 bg-[#0f0e1b]/80 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-[#f2f3ff]">
+                  <div className="absolute bottom-3 left-3 rounded-full border border-white/10 bg-[#0f0e1b]/80 px-3 py-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.24em] text-[#f2f3ff]">
                     View details
                   </div>
                 </Link>
-                <div className="flex flex-1 flex-col gap-3 p-5">
+                <div className="flex flex-1 flex-col gap-2 p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <h2 className="font-[var(--font-display)] text-xl text-[#f2f3ff]">
+                    <h2 className="font-[var(--font-display)] text-lg text-[#f2f3ff]">
                       {config.name}
                     </h2>
-                    <span className="rounded-full border border-white/10 px-3 py-1 text-[0.6rem] uppercase tracking-[0.3em] text-[#b3b7d4]">
+                    <span className="rounded-full border border-white/10 px-2 py-1 text-[0.55rem] uppercase tracking-[0.22em] text-[#b3b7d4]">
                       {config.visibility === "public" ? "Public" : "Private"}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.2em] text-[#30f2ff]">
+                  <div className="flex flex-wrap gap-3 text-[0.68rem] uppercase tracking-[0.18em] text-[#30f2ff]">
                     <span>{config.partsCount} parts</span>
                     <span>{config.estimatedWattage}W est.</span>
                   </div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
+                  <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[#b3b7d4]">
                     By {config.ownerName}
                   </p>
                 </div>
@@ -98,20 +101,27 @@ export default async function ConfigurationsPage() {
           </div>
         )}
 
+        <Pagination
+          basePath="/configurations"
+          limit={pageSize}
+          page={page}
+          total={total}
+        />
+
         {user && myConfigs.length > 0 ? (
           <div className="space-y-4">
             <h2 className="font-[var(--font-display)] text-2xl text-[#f2f3ff]">
               My configs
             </h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {myConfigs.map((config) => (
                 <article
                   key={`my-${config.id}`}
-                  className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#121126]/90"
+                  className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#121126]/90"
                 >
                   <Link
                     href={`/configurations/${config.id}`}
-                    className="group relative block aspect-[16/10] w-full bg-[#15142a] p-3"
+                    className="group relative block aspect-[16/8] w-full bg-[#15142a] p-2"
                   >
                     {config.coverImage ? (
                       <img
@@ -125,16 +135,16 @@ export default async function ConfigurationsPage() {
                       </div>
                     )}
                   </Link>
-                  <div className="flex flex-1 flex-col gap-3 p-5">
+                  <div className="flex flex-1 flex-col gap-2 p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <h3 className="font-[var(--font-display)] text-xl text-[#f2f3ff]">
+                      <h3 className="font-[var(--font-display)] text-lg text-[#f2f3ff]">
                         {config.name}
                       </h3>
-                      <span className="rounded-full border border-white/10 px-3 py-1 text-[0.6rem] uppercase tracking-[0.3em] text-[#b3b7d4]">
+                      <span className="rounded-full border border-white/10 px-2 py-1 text-[0.55rem] uppercase tracking-[0.22em] text-[#b3b7d4]">
                         {config.visibility === "public" ? "Public" : "Private"}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.2em] text-[#30f2ff]">
+                    <div className="flex flex-wrap gap-3 text-[0.68rem] uppercase tracking-[0.18em] text-[#30f2ff]">
                       <span>{config.partsCount} parts</span>
                       <span>{config.estimatedWattage}W est.</span>
                     </div>

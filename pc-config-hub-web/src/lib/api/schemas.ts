@@ -101,7 +101,7 @@ export const compatibilitySchema = z.object({
 });
 
 export const commentSchema = z.object({
-  body: z.string().min(1),
+  body: z.string().trim().min(2).max(1000),
 });
 
 export const roleSchema = z.enum(["user", "moderator", "admin"]);

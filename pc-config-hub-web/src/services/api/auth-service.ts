@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
@@ -33,7 +33,7 @@ export const registerUser = async (data: {
   const [existing] = await db
     .select({ id: users.id })
     .from(users)
-    .where(eq(users.email, data.email))
+    .where(and(eq(users.email, data.email), isNull(users.deletedAt)))
     .limit(1);
 
   if (existing) {
@@ -83,7 +83,7 @@ export const loginUser = async (data: {
       passwordHash: users.passwordHash,
     })
     .from(users)
-    .where(eq(users.email, data.email))
+    .where(and(eq(users.email, data.email), isNull(users.deletedAt)))
     .limit(1);
 
   if (!user) {

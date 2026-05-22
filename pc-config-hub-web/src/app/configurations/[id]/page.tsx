@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import CommentsSection from "@/app/comments-section";
 import ConfigurationActions from "@/app/configurations/configuration-actions";
+import { createConfigurationCommentAction } from "@/actions/comments";
 import { getCurrentUser } from "@/lib/auth";
 import { apiFetch } from "@/lib/api/server-fetch";
 import { categoryLabels } from "@/lib/api/catalog";
@@ -9,12 +11,18 @@ import type { ApiCategory } from "@/lib/api/types";
 
 type ConfigurationDetailsPageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ comment?: string | string[] }>;
 };
 
 export default async function ConfigurationDetailsPage({
   params,
+  searchParams,
 }: ConfigurationDetailsPageProps) {
   const { id } = await params;
+  const query = await searchParams;
+  const commentStatus = Array.isArray(query.comment)
+    ? query.comment[0]
+    : query.comment;
   const configurationId = Number(id);
   if (!Number.isFinite(configurationId)) {
     notFound();
@@ -50,7 +58,14 @@ export default async function ConfigurationDetailsPage({
   >("/api/parts?limit=200");
 
   const comments = await apiFetch<
-    Array<{ id: number; authorUserId: number; body: string; createdAt: string }>
+    Array<{
+      id: number;
+      authorUserId: number;
+      authorName: string | null;
+      authorEmail: string;
+      body: string;
+      createdAt: string;
+    }>
   >(`/api/configs/${configurationId}/comments`);
 
   if (!config) {
@@ -176,30 +191,14 @@ export default async function ConfigurationDetailsPage({
           </div>
         </div>
 
-        <div className="space-y-3">
-          <h2 className="font-[var(--font-display)] text-2xl text-[#f2f3ff]">
-            Comments
-          </h2>
-          {comments.length === 0 ? (
-            <div className="rounded-3xl border border-white/10 bg-[#121126]/90 p-5 text-sm text-[#b3b7d4]">
-              No comments yet.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="rounded-2xl border border-white/10 bg-[#121126]/90 p-4 text-sm text-[#b3b7d4]"
-                >
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
-                    User #{comment.authorUserId}
-                  </p>
-                  <p className="mt-2 text-sm text-[#f2f3ff]">{comment.body}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <CommentsSection
+          action={createConfigurationCommentAction}
+          comments={comments}
+          currentUser={user}
+          hiddenField={{ name: "configurationId", value: configurationId }}
+          loginHref={`/login?redirectTo=/configurations/${configurationId}`}
+          status={commentStatus}
+        />
       </div>
     </section>
   );

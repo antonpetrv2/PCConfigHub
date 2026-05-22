@@ -298,10 +298,10 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-xl space-y-4 rounded-3xl border border-white/10 bg-[#0f0e1b] p-6 text-sm text-[#b3b7d4]"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-xl space-y-3 overflow-y-auto rounded-2xl border border-white/10 bg-[#0f0e1b] p-4 text-sm text-[#b3b7d4] shadow-[0_0_40px_rgba(0,0,0,0.45)] sm:p-5"
       >
         <div className="flex items-center justify-between">
           <h3 className="font-[var(--font-display)] text-xl text-[#f2f3ff]">
@@ -325,7 +325,7 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
                 specs: {},
               }))
             }
-            className="rounded-2xl border border-white/10 bg-[#121126] px-4 py-2 text-sm text-[#f2f3ff]"
+            className="rounded-xl border border-white/10 bg-[#121126] px-4 py-2 text-sm text-[#f2f3ff]"
           >
             {categoryOrder.map((category) => (
               <option key={category} value={category}>
@@ -338,7 +338,7 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-1">
             <input
-            className="rounded-2xl border border-white/10 bg-[#121126] px-4 py-2"
+            className="rounded-xl border border-white/10 bg-[#121126] px-4 py-2"
             placeholder="Name"
             value={form.name}
             onChange={(event) =>
@@ -351,7 +351,7 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
             ) : null}
           </div>
           <input
-            className="rounded-2xl border border-white/10 bg-[#121126] px-4 py-2"
+            className="rounded-xl border border-white/10 bg-[#121126] px-4 py-2"
             placeholder="Manufacturer"
             value={form.manufacturer}
             onChange={(event) =>
@@ -359,7 +359,7 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
             }
           />
           <input
-            className="rounded-2xl border border-white/10 bg-[#121126] px-4 py-2"
+            className="rounded-xl border border-white/10 bg-[#121126] px-4 py-2"
             placeholder="Model"
             value={form.model}
             onChange={(event) =>
@@ -367,7 +367,7 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
             }
           />
           <select
-            className="rounded-2xl border border-white/10 bg-[#121126] px-4 py-2"
+            className="rounded-xl border border-white/10 bg-[#121126] px-4 py-2"
             value={form.visibility}
             onChange={(event) =>
               setForm((prev) => ({
@@ -382,7 +382,7 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
         </div>
 
         <textarea
-          className="w-full rounded-2xl border border-white/10 bg-[#121126] px-4 py-2"
+          className="w-full rounded-xl border border-white/10 bg-[#121126] px-4 py-2"
           placeholder="Description"
           rows={3}
           value={form.description}
@@ -395,7 +395,7 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
           {fields.map((field) => (
             <div key={field.key} className="space-y-1">
               <input
-                className="rounded-2xl border border-white/10 bg-[#121126] px-4 py-2"
+                className="rounded-xl border border-white/10 bg-[#121126] px-4 py-2"
                 placeholder={field.label}
                 value={form.specs[field.key] ?? ""}
                 onChange={(event) => setSpec(field.key, event.target.value)}
@@ -422,7 +422,7 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
           />
           <label
             htmlFor={imageInputId}
-            className="flex cursor-pointer flex-col gap-2 rounded-2xl border border-dashed border-[#30f2ff]/50 bg-[#121126] px-4 py-5 text-center transition hover:border-[#30f2ff] hover:bg-[#151a2f]"
+            className="flex cursor-pointer flex-col gap-2 rounded-xl border border-dashed border-[#30f2ff]/50 bg-[#121126] px-4 py-4 text-center transition hover:border-[#30f2ff] hover:bg-[#151a2f]"
           >
             <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[#30f2ff]">
               Upload image
@@ -437,12 +437,12 @@ export default function AddPartForm({ isOpen, onClose, part }: AddPartFormProps)
           ) : null}
 
           {imagePreview ? (
-            <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#121126] p-3">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#121126] p-3">
               <div className="flex items-center gap-3">
                 <img
                   src={imagePreview}
                   alt="Preview"
-                  className="h-16 w-16 rounded-xl object-cover"
+                  className="h-14 w-14 rounded-lg object-cover"
                 />
                 <span className="text-xs uppercase tracking-[0.2em] text-[#b3b7d4]">
                   Image preview

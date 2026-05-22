@@ -53,6 +53,9 @@ export function AppShell({ children, title, showBack = false }: AppShellProps) {
           />
           <NavLink href="/builder" label="Builder" active={pathname === '/builder'} />
           {isAuthenticated ? (
+            <NavLink href="/profile" label="Profile" active={pathname === '/profile'} />
+          ) : null}
+          {isAuthenticated ? (
             <Pressable onPress={() => void handleLogout()} style={styles.navButton}>
               <Text style={styles.navButtonText}>Logout</Text>
             </Pressable>
@@ -75,7 +78,7 @@ function NavLink({
   label,
   active,
 }: {
-  href: '/' | '/configurations' | '/builder' | '/login';
+  href: '/' | '/configurations' | '/builder' | '/login' | '/profile';
   label: string;
   active: boolean;
 }) {
