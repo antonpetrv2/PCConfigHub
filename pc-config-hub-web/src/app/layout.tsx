@@ -135,6 +135,12 @@ async function AuthNav({
         <span className="uppercase tracking-[0.2em]">Logged in:</span>
         <span className="font-semibold text-[#f2f3ff]">{user.name}</span>
       </div>
+      <Link
+        href="/change-password"
+        className="rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#f2f3ff] hover:bg-white/5"
+      >
+        Password
+      </Link>
       <form action={logoutAction}>
         <button
           type="submit"

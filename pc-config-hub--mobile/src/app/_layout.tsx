@@ -12,6 +12,8 @@ export default function RootLayout() {
         }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="login" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="reset-password" />
         <Stack.Screen name="configurations" />
         <Stack.Screen name="builder" />
       </Stack>

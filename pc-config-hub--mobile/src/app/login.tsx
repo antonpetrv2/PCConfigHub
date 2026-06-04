@@ -97,6 +97,10 @@ export default function LoginScreen() {
               </Text>
             </Pressable>
 
+            <Link href="/forgot-password" style={styles.secondaryLink}>
+              Forgot password?
+            </Link>
+
             <Text style={styles.helperText}>
               New users can register in the web app at http://localhost:3000/register.
             </Text>

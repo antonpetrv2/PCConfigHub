@@ -139,6 +139,32 @@ export function loginRequest(email: string, password: string) {
   });
 }
 
+export function forgotPasswordRequest(email: string) {
+  return apiRequest<{ success: boolean; resetUrl: string | null }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resetPasswordRequest(token: string, password: string) {
+  return apiRequest<{ success: boolean }>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
+  });
+}
+
+export function changePasswordRequest(
+  currentPassword: string,
+  newPassword: string,
+  token: string
+) {
+  return apiRequest<{ success: boolean }>('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+    token,
+  });
+}
+
 export function meRequest(token: string) {
   return apiRequest<ApiUser>('/auth/me', { token });
 }

@@ -5,6 +5,7 @@ type LoginPageProps = {
   searchParams: Promise<{
     error?: string | string[];
     registered?: string | string[];
+    reset?: string | string[];
     redirectTo?: string | string[];
   }>;
 };
@@ -25,6 +26,9 @@ const getMessage = (error?: string, registered?: string) => {
   if (error === "pending") {
     return "Your account is pending approval.";
   }
+  if (registered === "reset") {
+    return "Password changed. You can log in with the new password.";
+  }
   return undefined;
 };
 
@@ -33,9 +37,10 @@ const getParam = (value?: string | string[]) =>
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
+  const resetMessage = getParam(params.reset) === "1" ? "reset" : undefined;
   const message = getMessage(
     getParam(params.error),
-    getParam(params.registered)
+    getParam(params.registered) ?? resetMessage
   );
   const redirectTo = getParam(params.redirectTo) ?? "/";
 

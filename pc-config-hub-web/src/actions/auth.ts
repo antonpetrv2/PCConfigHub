@@ -1,12 +1,18 @@
 "use server";
 
 import bcrypt from "bcrypt";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { AUTH_COOKIE_NAME } from "@/lib/auth";
+import { AUTH_COOKIE_NAME, getCurrentUser } from "@/lib/auth";
 import { signAuthToken } from "@/lib/jwt";
+import { ApiError } from "@/lib/api/errors";
 import { createUser, findUserByEmail } from "@/services/auth-service";
+import {
+  changePassword,
+  requestPasswordReset,
+  resetPassword,
+} from "@/services/api/password-service";
 
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
@@ -20,6 +26,19 @@ const getSafeRedirectPath = (value: string) => {
   }
 
   return value;
+};
+
+const withError = (path: string, error: string) => `${path}?error=${error}`;
+
+const getRequestOrigin = async () => {
+  const headerStore = await headers();
+  const host = headerStore.get("host");
+  if (!host) {
+    return undefined;
+  }
+
+  const protocol = headerStore.get("x-forwarded-proto") ?? "http";
+  return `${protocol}://${host}`;
 };
 
 export const registerAction = async (formData: FormData) => {
@@ -101,4 +120,91 @@ export const logoutAction = async () => {
   });
 
   redirect("/");
+};
+
+export const forgotPasswordAction = async (formData: FormData) => {
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
+
+  if (!email) {
+    redirect(withError("/forgot-password", "missing"));
+  }
+
+  const result = await requestPasswordReset({
+    email,
+    origin: await getRequestOrigin(),
+  });
+  const resetUrlParam = result.resetUrl
+    ? `&resetUrl=${encodeURIComponent(result.resetUrl)}`
+    : "";
+
+  redirect(`/forgot-password?sent=1${resetUrlParam}`);
+};
+
+export const resetPasswordAction = async (formData: FormData) => {
+  const token = String(formData.get("token") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!token || !password || !confirmPassword) {
+    redirect(withError("/reset-password", "missing"));
+  }
+
+  if (password.length < 8) {
+    redirect(`/reset-password?token=${encodeURIComponent(token)}&error=weak`);
+  }
+
+  if (password !== confirmPassword) {
+    redirect(`/reset-password?token=${encodeURIComponent(token)}&error=mismatch`);
+  }
+
+  let redirectTo = "/login?reset=1";
+  try {
+    await resetPassword({ token, password });
+  } catch (error) {
+    const message =
+      error instanceof ApiError && error.status === 400 ? "invalid" : "failed";
+    redirectTo = `/reset-password?token=${encodeURIComponent(
+      token
+    )}&error=${message}`;
+  }
+
+  redirect(redirectTo);
+};
+
+export const changePasswordAction = async (formData: FormData) => {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login?redirectTo=/change-password");
+  }
+
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    redirect(withError("/change-password", "missing"));
+  }
+
+  if (newPassword.length < 8) {
+    redirect(withError("/change-password", "weak"));
+  }
+
+  if (newPassword !== confirmPassword) {
+    redirect(withError("/change-password", "mismatch"));
+  }
+
+  let redirectTo = "/change-password?changed=1";
+  try {
+    await changePassword({
+      userId: user.id,
+      currentPassword,
+      newPassword,
+    });
+  } catch (error) {
+    const message =
+      error instanceof ApiError && error.status === 400 ? "incorrect" : "failed";
+    redirectTo = `/change-password?error=${message}`;
+  }
+
+  redirect(redirectTo);
 };

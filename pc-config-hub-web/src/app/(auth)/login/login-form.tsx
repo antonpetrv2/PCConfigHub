@@ -70,6 +70,12 @@ export default function LoginForm({
           </button>
         </span>
       </label>
+      <a
+        href="/forgot-password"
+        className="inline-flex text-xs font-semibold uppercase tracking-[0.18em] text-[#ff5bf1] transition hover:text-[#f2f3ff]"
+      >
+        Forgot password?
+      </a>
       <SubmitButton />
     </form>
   );

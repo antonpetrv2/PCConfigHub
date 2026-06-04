@@ -94,6 +94,35 @@ export const users = pgTable(
   }
 );
 
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => {
+    return {
+      passwordResetTokensHashKey: uniqueIndex(
+        "password_reset_tokens_hash_key"
+      ).on(table.tokenHash),
+      passwordResetTokensUserIdx: index("password_reset_tokens_user_idx").on(
+        table.userId
+      ),
+      passwordResetTokensExpiryIdx: index(
+        "password_reset_tokens_expires_at_idx"
+      ).on(table.expiresAt),
+    };
+  }
+);
+
 export const importBatches = pgTable(
   "import_batches",
   {
