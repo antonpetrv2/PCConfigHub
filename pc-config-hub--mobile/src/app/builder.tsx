@@ -20,15 +20,8 @@ import {
 type SelectionState = Record<ApiCategory, PartRecord | null>;
 
 const emptySelection = (): SelectionState => ({
-  motherboard: null,
-  cpu: null,
-  gpu: null,
-  ram: null,
-  psu: null,
-  case: null,
-  storage: null,
-  soundcard: null,
-});
+  ...Object.fromEntries(categoryOrder.map((category) => [category, null])),
+}) as SelectionState;
 
 export default function BuilderScreen() {
   return (
@@ -44,12 +37,12 @@ function BuilderContent() {
   const configId = params.configId ? Number(params.configId) : null;
   const isEditing = Boolean(configId && Number.isFinite(configId));
 
-  const [activeCategory, setActiveCategory] = useState<ApiCategory>('motherboard');
+  const [activeCategory, setActiveCategory] = useState<ApiCategory>('complete_computer');
   const [availableParts, setAvailableParts] = useState<PartRecord[]>([]);
   const [selection, setSelection] = useState<SelectionState>(() => emptySelection());
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [visibility, setVisibility] = useState<Visibility>('private');
+  const [visibility, setVisibility] = useState<Visibility>('public');
   const [isLoadingConfig, setIsLoadingConfig] = useState(false);
   const [isLoadingParts, setIsLoadingParts] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -198,8 +191,7 @@ function BuilderContent() {
   return (
     <AppShell title={isEditing ? 'Edit Builder' : 'Builder'} showBack>
       <Text style={styles.subtitle}>
-        Choose parts by category. A case is required before the backend can save a compatible
-        configuration.
+        Link catalog items into complete systems, test benches, boxed sets, or restoration builds.
       </Text>
 
       {isLoadingConfig ? (
@@ -346,7 +338,7 @@ function BuilderContent() {
 
 function formatApiError(error: ApiClientError) {
   if (error.status === 422) {
-    return `${error.message}. Check that a case is selected and the parts are compatible.`;
+    return `${error.message}. Check that the selected items are accessible and compatible.`;
   }
 
   return error.message;

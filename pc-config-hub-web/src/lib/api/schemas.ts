@@ -31,6 +31,95 @@ export const changePasswordSchema = z.object({
 });
 
 export const partCategorySchema = z.enum([
+  "complete_computer",
+  "drive",
+  "expansion_card",
+  "motherboard",
+  "cpu",
+  "ram",
+  "video_card",
+  "sound_card",
+  "storage",
+  "floppy_drive",
+  "optical_drive",
+  "controller_card",
+  "network_card",
+  "io_card",
+  "case",
+  "psu",
+  "monitor",
+  "keyboard",
+  "mouse",
+  "external_module",
+  "midi_module",
+  "cable_adapter",
+  "software_driver",
+  "documentation",
+  "other",
+]);
+
+export const visibilitySchema = z.enum(["private", "public"]);
+
+export const conditionSchema = z
+  .enum(["working", "partially_working", "untested", "for_repair", "dead"])
+  .default("untested");
+
+const stringArraySchema = z
+  .array(z.string())
+  .or(z.string())
+  .optional()
+  .transform((value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.map((item) => item.trim()).filter(Boolean);
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  });
+
+const recordSchema = z.record(z.string(), z.unknown()).default({});
+
+const logEntrySchema = z.object({
+  date: z.string().optional(),
+  testType: z.string().optional(),
+  result: z.string().optional(),
+  softwareUsed: z.string().optional(),
+  notes: z.string().optional(),
+  workPerformed: z.string().optional(),
+  partsReplaced: z.string().optional(),
+  problemsFound: z.string().optional(),
+  photos: stringArraySchema,
+  photosBefore: stringArraySchema,
+  photosAfter: stringArraySchema,
+});
+
+export const partBaseSchema = z.object({
+  name: z.string().min(2),
+  manufacturer: z.string().optional(),
+  model: z.string().optional(),
+  yearEra: z.string().optional(),
+  countryOfOrigin: z.string().optional(),
+  serialNumber: z.string().optional(),
+  inventoryNumber: z.string().optional(),
+  condition: conditionSchema,
+  visibility: visibilitySchema.default("private"),
+  description: z.string().optional(),
+  notes: z.string().optional(),
+  tags: stringArraySchema,
+  location: z.string().optional(),
+  acquisitionDate: z.string().optional(),
+  source: z.string().optional(),
+  purchasePrice: z.string().optional(),
+  estimatedValue: z.string().optional(),
+  relatedConfigurationId: z.number().int().positive().optional().nullable(),
+  category: partCategorySchema,
+  specs: recordSchema,
+  customFields: recordSchema,
+  testLogs: z.array(logEntrySchema).default([]),
+  restorationLogs: z.array(logEntrySchema).default([]),
+});
+
+export const legacyPartCategorySchema = z.enum([
   "motherboard",
   "cpu",
   "gpu",
@@ -40,17 +129,6 @@ export const partCategorySchema = z.enum([
   "storage",
   "soundcard",
 ]);
-
-export const visibilitySchema = z.enum(["private", "public"]);
-
-export const partBaseSchema = z.object({
-  name: z.string().min(2),
-  manufacturer: z.string().optional(),
-  model: z.string().optional(),
-  description: z.string().optional(),
-  visibility: visibilitySchema.default("private"),
-  category: partCategorySchema,
-});
 
 export const motherboardSpecSchema = z.object({
   socket: z.string().min(1),

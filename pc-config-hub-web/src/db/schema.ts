@@ -161,10 +161,29 @@ export const components = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
     type: componentType("type").notNull(),
+    categorySlug: varchar("category_slug", { length: 80 }),
     name: varchar("name", { length: 200 }).notNull(),
     manufacturer: varchar("manufacturer", { length: 120 }),
     model: varchar("model", { length: 120 }),
+    yearEra: varchar("year_era", { length: 120 }),
+    countryOfOrigin: varchar("country_of_origin", { length: 120 }),
+    serialNumber: varchar("serial_number", { length: 160 }),
+    inventoryNumber: varchar("inventory_number", { length: 160 }),
+    condition: varchar("condition", { length: 40 }).notNull().default("untested"),
     description: text("description"),
+    notes: text("notes"),
+    tags: text("tags").array(),
+    location: varchar("location", { length: 200 }),
+    acquisitionDate: varchar("acquisition_date", { length: 40 }),
+    source: varchar("source", { length: 200 }),
+    purchasePrice: varchar("purchase_price", { length: 80 }),
+    estimatedValue: varchar("estimated_value", { length: 80 }),
+    relatedConfigurationId: integer("related_configuration_id").references(
+      () => pcConfigurations.id,
+      { onDelete: "set null" }
+    ),
+    specs: jsonb("specs").notNull().default(sql`'{}'::jsonb`),
+    customFields: jsonb("custom_fields").notNull().default(sql`'{}'::jsonb`),
     visibility: visibility("visibility").notNull().default("private"),
     approvalStatus: approvalStatus("approval_status")
       .notNull()
@@ -197,8 +216,110 @@ export const components = pgTable(
         table.approvalStatus
       ),
       componentsOwnerIdx: index("components_owner_idx").on(table.ownerUserId),
+      componentsCategorySlugIdx: index("components_category_slug_idx").on(
+        table.categorySlug
+      ),
+      componentsConditionIdx: index("components_condition_idx").on(
+        table.condition
+      ),
     };
   }
+);
+
+export const componentTestLogs = pgTable(
+  "component_test_logs",
+  {
+    id: serial("id").primaryKey(),
+    componentId: integer("component_id")
+      .notNull()
+      .references(() => components.id, { onDelete: "cascade" }),
+    testedAt: varchar("tested_at", { length: 40 }),
+    testType: varchar("test_type", { length: 160 }),
+    result: varchar("result", { length: 160 }),
+    softwareUsed: text("software_used"),
+    notes: text("notes"),
+    photos: text("photos").array(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    componentTestLogsComponentIdx: index("component_test_logs_component_idx").on(
+      table.componentId
+    ),
+  })
+);
+
+export const componentRestorationLogs = pgTable(
+  "component_restoration_logs",
+  {
+    id: serial("id").primaryKey(),
+    componentId: integer("component_id")
+      .notNull()
+      .references(() => components.id, { onDelete: "cascade" }),
+    restoredAt: varchar("restored_at", { length: 40 }),
+    workPerformed: text("work_performed"),
+    partsReplaced: text("parts_replaced"),
+    problemsFound: text("problems_found"),
+    photosBefore: text("photos_before").array(),
+    photosAfter: text("photos_after").array(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    componentRestorationLogsComponentIdx: index(
+      "component_restoration_logs_component_idx"
+    ).on(table.componentId),
+  })
+);
+
+export const configurationTestLogs = pgTable(
+  "configuration_test_logs",
+  {
+    id: serial("id").primaryKey(),
+    configurationId: integer("configuration_id")
+      .notNull()
+      .references(() => pcConfigurations.id, { onDelete: "cascade" }),
+    testedAt: varchar("tested_at", { length: 40 }),
+    testType: varchar("test_type", { length: 160 }),
+    result: varchar("result", { length: 160 }),
+    softwareUsed: text("software_used"),
+    notes: text("notes"),
+    photos: text("photos").array(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    configurationTestLogsConfigurationIdx: index(
+      "configuration_test_logs_configuration_idx"
+    ).on(table.configurationId),
+  })
+);
+
+export const configurationRestorationLogs = pgTable(
+  "configuration_restoration_logs",
+  {
+    id: serial("id").primaryKey(),
+    configurationId: integer("configuration_id")
+      .notNull()
+      .references(() => pcConfigurations.id, { onDelete: "cascade" }),
+    restoredAt: varchar("restored_at", { length: 40 }),
+    workPerformed: text("work_performed"),
+    partsReplaced: text("parts_replaced"),
+    problemsFound: text("problems_found"),
+    photosBefore: text("photos_before").array(),
+    photosAfter: text("photos_after").array(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    configurationRestorationLogsConfigurationIdx: index(
+      "configuration_restoration_logs_configuration_idx"
+    ).on(table.configurationId),
+  })
 );
 
 export const motherboardDetails = pgTable("motherboard_details", {

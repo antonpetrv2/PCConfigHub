@@ -54,15 +54,15 @@ export default async function ConfigurationsPage({
             No configurations available yet.
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {configs.map((config) => (
               <article
                 key={config.id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0f0e1b]/90 shadow-[0_0_22px_rgba(48,242,255,0.1)]"
+                className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0f0e1b]/90 shadow-[0_0_22px_rgba(48,242,255,0.1)]"
               >
                 <Link
                   href={`/configurations/${config.id}`}
-                  className="group relative block aspect-[16/8] w-full bg-[#15142a] p-2"
+                  className="group relative block h-[360px] w-full bg-[#15142a] p-2 sm:h-[380px] lg:h-[420px]"
                 >
                   {config.coverImage ? (
                     <img
@@ -79,7 +79,7 @@ export default async function ConfigurationsPage({
                     View details
                   </div>
                 </Link>
-                <div className="flex flex-1 flex-col gap-2 p-4">
+                <div className="flex min-h-[150px] flex-1 flex-col gap-2 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="font-[var(--font-display)] text-lg text-[#f2f3ff]">
                       {config.name}
@@ -113,15 +113,15 @@ export default async function ConfigurationsPage({
             <h2 className="font-[var(--font-display)] text-2xl text-[#f2f3ff]">
               My configs
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {myConfigs.map((config) => (
                 <article
                   key={`my-${config.id}`}
-                  className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#121126]/90"
+                  className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#121126]/90"
                 >
                   <Link
                     href={`/configurations/${config.id}`}
-                    className="group relative block aspect-[16/8] w-full bg-[#15142a] p-2"
+                    className="group relative block h-[360px] w-full bg-[#15142a] p-2 sm:h-[380px] lg:h-[420px]"
                   >
                     {config.coverImage ? (
                       <img
@@ -135,7 +135,7 @@ export default async function ConfigurationsPage({
                       </div>
                     )}
                   </Link>
-                  <div className="flex flex-1 flex-col gap-2 p-4">
+                  <div className="flex min-h-[150px] flex-1 flex-col gap-2 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="font-[var(--font-display)] text-lg text-[#f2f3ff]">
                         {config.name}

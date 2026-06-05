@@ -4,7 +4,19 @@ import { verifyAuthToken } from "@/lib/jwt";
 import { apiCorsHeaders } from "@/lib/api/response";
 
 const AUTH_COOKIE_NAME = "auth_token";
-const PUBLIC_PATHS = new Set(["/", "/login", "/register", "/setup-admin"]);
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/catalog",
+  "/configurations",
+  "/forgot-password",
+  "/login",
+  "/parts",
+  "/register",
+  "/reset-password",
+  "/setup-admin",
+]);
+
+const PUBLIC_PREFIXES = ["/configurations/", "/parts/"];
 
 const getLoginUrl = (request: NextRequest) => {
   const loginUrl = new URL("/login", request.url);
@@ -34,7 +46,9 @@ export const proxy = async (request: NextRequest) => {
     return NextResponse.next();
   }
 
-  const isPublicPath = PUBLIC_PATHS.has(pathname);
+  const isPublicPath =
+    PUBLIC_PATHS.has(pathname) ||
+    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
   if (!token) {

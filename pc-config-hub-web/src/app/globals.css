@@ -98,3 +98,13 @@ body {
     background-size: 28px 28px;
   }
 }
+
+@layer components {
+  .field-label {
+    @apply text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff];
+  }
+
+  .form-input {
+    @apply w-full rounded-xl border border-white/10 bg-[#121126] px-4 py-2 text-sm text-[#f2f3ff] outline-none transition focus:border-[#30f2ff]/60;
+  }
+}

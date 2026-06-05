@@ -30,16 +30,19 @@ type BuilderClientProps = {
   submitLabel?: string;
 };
 
-const emptySelection = (): Record<ApiCategory, Part | null> => ({
-  motherboard: null,
-  cpu: null,
-  gpu: null,
-  ram: null,
-  psu: null,
-  case: null,
-  storage: null,
-  soundcard: null,
-});
+const emptySelection = (): Record<ApiCategory, Part | null> =>
+  Object.fromEntries(categoryOrder.map((category) => [category, null])) as Record<
+    ApiCategory,
+    Part | null
+  >;
+
+const emptyPartOptions = (): Record<ApiCategory, Part[]> => {
+  const options = {} as Record<ApiCategory, Part[]>;
+  for (const category of categoryOrder) {
+    options[category] = [];
+  }
+  return options;
+};
 
 export default function BuilderClient({
   parts,
@@ -47,7 +50,7 @@ export default function BuilderClient({
   configId,
   initialName = "",
   initialDescription = "",
-  initialVisibility = "private",
+  initialVisibility = "public",
   initialPartIds = [],
   onSaved,
   submitLabel,
@@ -79,16 +82,7 @@ export default function BuilderClient({
         acc[part.category].push(part);
         return acc;
       },
-      {
-        motherboard: [],
-        cpu: [],
-        gpu: [],
-        ram: [],
-        psu: [],
-        case: [],
-        storage: [],
-        soundcard: [],
-      }
+      emptyPartOptions()
     );
   }, [parts]);
 
@@ -152,8 +146,8 @@ export default function BuilderClient({
       return;
     }
 
-    if (!selection.case) {
-      setStatus("A case is required.");
+    if (!selectedIds.length) {
+      setStatus("Select at least one catalog item.");
       return;
     }
 

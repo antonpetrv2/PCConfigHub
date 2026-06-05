@@ -228,19 +228,12 @@ export const createConfig = async (data: {
     throw new ApiError("One or more parts are not accessible", 403);
   }
 
-  if (!parts.some((part) => part.category === "case")) {
-    throw new ApiError("A case is required", 422);
-  }
-
   const compatibility = checkCompatibility(parts);
   if (!compatibility.compatible) {
     throw new ApiError("Compatibility check failed", 422, compatibility);
   }
 
-  const approvalStatus =
-    data.visibility === "public" && data.userRole === "user"
-      ? "pending"
-      : "approved";
+  const approvalStatus = "approved";
 
   const [config] = await db
     .insert(pcConfigurations)
@@ -289,19 +282,12 @@ export const updateConfig = async (data: {
     throw new ApiError("One or more parts are not accessible", 403);
   }
 
-  if (!parts.some((part) => part.category === "case")) {
-    throw new ApiError("A case is required", 422);
-  }
-
   const compatibility = checkCompatibility(parts);
   if (!compatibility.compatible) {
     throw new ApiError("Compatibility check failed", 422, compatibility);
   }
 
-  const approvalStatus =
-    data.visibility === "public" && data.userRole === "user"
-      ? "pending"
-      : "approved";
+  const approvalStatus = "approved";
 
   await db
     .update(pcConfigurations)

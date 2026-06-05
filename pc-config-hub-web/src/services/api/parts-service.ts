@@ -12,26 +12,40 @@ import {
 
 import { db } from "@/db/client";
 import {
-  caseDetails,
   componentImages,
+  componentRestorationLogs,
+  componentTestLogs,
   components,
-  cpuDetails,
-  motherboardDetails,
-  powerSupplyDetails,
-  ramDetails,
-  soundCardDetails,
-  storageDetails,
-  videoCardDetails,
 } from "@/db/schema";
-import { toDbComponentType, fromDbComponentType } from "@/lib/api/category-map";
+import { toDbComponentType } from "@/lib/api/category-map";
 import { ApiError } from "@/lib/api/errors";
-import type { ApiCategory } from "@/lib/api/types";
+import type { ApiCategory, ItemCondition } from "@/lib/api/types";
 import { deleteObjectByUrl } from "@/services/api/upload-service";
 
 export type PartImage = {
   url: string;
   altText: string | null;
   sortOrder: number;
+};
+
+export type TestLogEntry = {
+  id?: number;
+  date?: string | null;
+  testType?: string | null;
+  result?: string | null;
+  softwareUsed?: string | null;
+  notes?: string | null;
+  photos?: string[];
+};
+
+export type RestorationLogEntry = {
+  id?: number;
+  date?: string | null;
+  workPerformed?: string | null;
+  partsReplaced?: string | null;
+  problemsFound?: string | null;
+  photosBefore?: string[];
+  photosAfter?: string[];
 };
 
 export type PartRecord = {
@@ -41,11 +55,128 @@ export type PartRecord = {
   name: string;
   manufacturer: string | null;
   model: string | null;
+  yearEra: string | null;
+  countryOfOrigin: string | null;
+  serialNumber: string | null;
+  inventoryNumber: string | null;
+  condition: ItemCondition;
   description: string | null;
+  notes: string | null;
+  tags: string[];
+  location: string | null;
+  acquisitionDate: string | null;
+  source: string | null;
+  purchasePrice: string | null;
+  estimatedValue: string | null;
+  relatedConfigurationId: number | null;
   visibility: "private" | "public";
   approvalStatus: "pending" | "approved" | "rejected";
   specs: Record<string, unknown>;
+  customFields: Record<string, unknown>;
   images: PartImage[];
+  testLogs: TestLogEntry[];
+  restorationLogs: RestorationLogEntry[];
+};
+
+export type PartFilters = {
+  userId?: number;
+  category?: ApiCategory;
+  search?: string;
+  era?: string;
+  busType?: string;
+  cpuFamily?: string;
+  condition?: ItemCondition;
+  systemType?: string;
+  tag?: string;
+  page: number;
+  limit: number;
+};
+
+type PartInput = {
+  userId: number;
+  userRole: "admin" | "moderator" | "user";
+  category: ApiCategory;
+  name: string;
+  manufacturer?: string;
+  model?: string;
+  yearEra?: string;
+  countryOfOrigin?: string;
+  serialNumber?: string;
+  inventoryNumber?: string;
+  condition: ItemCondition;
+  description?: string;
+  notes?: string;
+  tags: string[];
+  location?: string;
+  acquisitionDate?: string;
+  source?: string;
+  purchasePrice?: string;
+  estimatedValue?: string;
+  relatedConfigurationId?: number | null;
+  visibility: "private" | "public";
+  specs: Record<string, unknown>;
+  customFields: Record<string, unknown>;
+  testLogs: TestLogEntry[];
+  restorationLogs: RestorationLogEntry[];
+  imageUrl?: string | null;
+};
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const asCondition = (value: string): ItemCondition => {
+  if (
+    value === "working" ||
+    value === "partially_working" ||
+    value === "untested" ||
+    value === "for_repair" ||
+    value === "dead"
+  ) {
+    return value;
+  }
+  return "untested";
+};
+
+const normalizeCategory = (category: string): ApiCategory => {
+  if (category === "keyboard" || category === "mouse") {
+    return "other";
+  }
+
+  if (
+    category === "controller_card" ||
+    category === "network_card" ||
+    category === "io_card"
+  ) {
+    return "expansion_card";
+  }
+
+  if (
+    category === "storage" ||
+    category === "floppy_drive" ||
+    category === "optical_drive"
+  ) {
+    return "drive";
+  }
+
+  return category as ApiCategory;
+};
+
+const categoryFilterValues = (category: ApiCategory) => {
+  if (category === "other") {
+    return ["other", "keyboard", "mouse"];
+  }
+
+  if (category === "expansion_card") {
+    return ["expansion_card", "controller_card", "network_card", "io_card"];
+  }
+
+  if (category === "drive") {
+    return ["drive", "storage", "floppy_drive", "optical_drive"];
+  }
+
+  return [category];
 };
 
 const buildVisibilityFilter = (userId?: number) => {
@@ -61,109 +192,66 @@ const buildVisibilityFilter = (userId?: number) => {
   return or(publicFilter, eq(components.ownerUserId, userId));
 };
 
-const mapSpecs = (row: {
-  type: string;
-  cpuSocket: string | null;
-  motherboardFormFactor: string | null;
-  ramType: string | null;
-  ramSlots: number | null;
-  pciSlots: string[] | null;
-  gpuSlotType: string | null;
-  soundSlotType: string | null;
-  cpuSocketValue: string | null;
-  cpuTdp: number | null;
-  cpuCores: number | null;
-  cpuThreads: number | null;
-  videoSlotType: string | null;
-  videoTdp: number | null;
-  videoLength: number | null;
-  vramGb: number | null;
-  ramTypeValue: string | null;
-  ramCapacityGb: number | null;
-  ramSpeedMhz: number | null;
-  ramSlotsValue: number | null;
-  psuType: string | null;
-  psuFormFactor: string | null;
-  psuModular: boolean | null;
-  psuWattage: number | null;
-  caseFormFactor: string | null;
-  caseFormFactors: string[] | null;
-  casePsuFormFactor: string | null;
-  caseMaxGpuLength: number | null;
-  storageInterface: string | null;
-  storageCapacityGb: number | null;
-  storageType: string | null;
-  soundSlotTypeValue: string | null;
-}) => {
-  const category = fromDbComponentType(row.type) as ApiCategory;
+const buildBaseQuery = (filters: Omit<PartFilters, "page" | "limit">) => {
+  const conditions = [isNull(components.deletedAt), buildVisibilityFilter(filters.userId)];
 
-  switch (category) {
-    case "motherboard": {
-      const derivedPciSlots = [row.gpuSlotType, row.soundSlotType].filter(
-        (value): value is string => Boolean(value)
-      );
-      return {
-        socket: row.cpuSocket,
-        formFactor: row.motherboardFormFactor,
-        ramSlots: row.ramSlots,
-        ramType: row.ramType,
-        pciSlots: row.pciSlots?.length ? row.pciSlots : derivedPciSlots,
-      };
-    }
-    case "cpu":
-      return {
-        socket: row.cpuSocketValue,
-        tdp: row.cpuTdp,
-        cores: row.cpuCores,
-        threads: row.cpuThreads,
-      };
-    case "gpu":
-      return {
-        pciSlot: row.videoSlotType,
-        tdp: row.videoTdp,
-        vram: row.vramGb,
-        length: row.videoLength,
-      };
-    case "ram":
-      return {
-        type: row.ramTypeValue,
-        capacity: row.ramCapacityGb,
-        speed: row.ramSpeedMhz,
-        slots: row.ramSlotsValue,
-      };
-    case "psu":
-      return {
-        wattage: row.psuWattage,
-        formFactor: row.psuFormFactor ?? row.psuType,
-        modular: row.psuModular ?? false,
-      };
-    case "case":
-      return {
-        formFactor:
-          row.caseFormFactors?.length && row.caseFormFactors.length > 0
-            ? row.caseFormFactors
-            : row.caseFormFactor
-              ? [row.caseFormFactor]
-              : [],
-        psuFormFactor: row.casePsuFormFactor,
-        maxGpuLength: row.caseMaxGpuLength,
-      };
-    case "storage":
-      return {
-        interface: row.storageInterface,
-        capacity: row.storageCapacityGb,
-        type: row.storageType,
-      };
-    case "soundcard":
-      return {
-        pciSlot: row.soundSlotTypeValue,
-      };
-    default:
-      return {};
+  if (filters.category) {
+    conditions.push(inArray(components.categorySlug, categoryFilterValues(filters.category)));
   }
+
+  if (filters.condition) {
+    conditions.push(eq(components.condition, filters.condition));
+  }
+
+  if (filters.era) {
+    conditions.push(ilike(components.yearEra, `%${filters.era}%`));
+  }
+
+  if (filters.search) {
+    const term = `%${filters.search}%`;
+    conditions.push(
+      or(
+        ilike(components.name, term),
+        ilike(components.manufacturer, term),
+        ilike(components.model, term),
+        ilike(components.description, term),
+        sql`array_to_string(${components.tags}, ' ') ilike ${term}`
+      )
+    );
+  }
+
+  if (filters.tag) {
+    const term = `%${filters.tag}%`;
+    conditions.push(sql`array_to_string(${components.tags}, ' ') ilike ${term}`);
+  }
+
+  if (filters.busType) {
+    conditions.push(sql`${components.specs}->>'busType' ilike ${`%${filters.busType}%`}`);
+  }
+
+  if (filters.cpuFamily) {
+    conditions.push(
+      sql`coalesce(${components.specs}->>'architecture', ${components.specs}->>'cpuType', ${components.specs}->>'cpu') ilike ${`%${filters.cpuFamily}%`}`
+    );
+  }
+
+  if (filters.systemType) {
+    conditions.push(
+      sql`coalesce(${components.specs}->>'caseStyle', ${components.specs}->>'formFactor') ilike ${`%${filters.systemType}%`}`
+    );
+  }
+
+  return and(...conditions);
 };
 
-const mapImageList = (rows: Array<{ componentId: number; url: string; altText: string | null; sortOrder: number }>) => {
+const mapImageList = (
+  rows: Array<{
+    componentId: number;
+    url: string;
+    altText: string | null;
+    sortOrder: number;
+  }>
+) => {
   const images = new Map<number, PartImage[]>();
   for (const row of rows) {
     const list = images.get(row.componentId) ?? [];
@@ -173,35 +261,44 @@ const mapImageList = (rows: Array<{ componentId: number; url: string; altText: s
   return images;
 };
 
-const buildBaseQuery = (userId?: number, category?: ApiCategory, search?: string) => {
-  const conditions = [isNull(components.deletedAt), buildVisibilityFilter(userId)];
+const mapRowsToParts = (
+  rows: Array<typeof components.$inferSelect>,
+  imagesByComponent: Map<number, PartImage[]>,
+  testLogsByComponent = new Map<number, TestLogEntry[]>(),
+  restorationLogsByComponent = new Map<number, RestorationLogEntry[]>()
+) =>
+  rows.map((row) => ({
+    id: row.id,
+    category: normalizeCategory(row.categorySlug ?? row.type),
+    ownerUserId: row.ownerUserId,
+    name: row.name,
+    manufacturer: row.manufacturer ?? null,
+    model: row.model ?? null,
+    yearEra: row.yearEra ?? null,
+    countryOfOrigin: row.countryOfOrigin ?? null,
+    serialNumber: row.serialNumber ?? null,
+    inventoryNumber: row.inventoryNumber ?? null,
+    condition: asCondition(row.condition),
+    description: row.description ?? null,
+    notes: row.notes ?? null,
+    tags: row.tags ?? [],
+    location: row.location ?? null,
+    acquisitionDate: row.acquisitionDate ?? null,
+    source: row.source ?? null,
+    purchasePrice: row.purchasePrice ?? null,
+    estimatedValue: row.estimatedValue ?? null,
+    relatedConfigurationId: row.relatedConfigurationId ?? null,
+    visibility: row.visibility,
+    approvalStatus: row.approvalStatus,
+    specs: asRecord(row.specs),
+    customFields: asRecord(row.customFields),
+    images: imagesByComponent.get(row.id) ?? [],
+    testLogs: testLogsByComponent.get(row.id) ?? [],
+    restorationLogs: restorationLogsByComponent.get(row.id) ?? [],
+  })) satisfies PartRecord[];
 
-  if (category) {
-    conditions.push(eq(components.type, toDbComponentType(category)));
-  }
-
-  if (search) {
-    const term = `%${search}%`;
-    conditions.push(
-      or(
-        ilike(components.name, term),
-        ilike(components.manufacturer, term),
-        ilike(components.model, term)
-      )
-    );
-  }
-
-  return and(...conditions);
-};
-
-export const listParts = async (data: {
-  userId?: number;
-  category?: ApiCategory;
-  search?: string;
-  page: number;
-  limit: number;
-}) => {
-  const where = buildBaseQuery(data.userId, data.category, data.search);
+export const listParts = async (filters: PartFilters) => {
+  const where = buildBaseQuery(filters);
 
   const [{ total }] = await db
     .select({ total: sql<number>`count(*)` })
@@ -209,61 +306,12 @@ export const listParts = async (data: {
     .where(where);
 
   const rows = await db
-    .select({
-      id: components.id,
-      type: components.type,
-      ownerUserId: components.ownerUserId,
-      name: components.name,
-      manufacturer: components.manufacturer,
-      model: components.model,
-      description: components.description,
-      visibility: components.visibility,
-      approvalStatus: components.approvalStatus,
-      cpuSocket: motherboardDetails.cpuSocket,
-      motherboardFormFactor: motherboardDetails.formFactor,
-      ramType: motherboardDetails.ramType,
-      ramSlots: motherboardDetails.ramSlots,
-      pciSlots: motherboardDetails.pciSlots,
-      gpuSlotType: motherboardDetails.gpuSlotType,
-      soundSlotType: motherboardDetails.soundSlotType,
-      cpuSocketValue: cpuDetails.socket,
-      cpuTdp: cpuDetails.tdp,
-      cpuCores: cpuDetails.cores,
-      cpuThreads: cpuDetails.threads,
-      videoSlotType: videoCardDetails.slotType,
-      videoTdp: videoCardDetails.tdp,
-      videoLength: videoCardDetails.lengthMm,
-      vramGb: videoCardDetails.vramGb,
-      ramTypeValue: ramDetails.type,
-      ramCapacityGb: ramDetails.capacityGb,
-      ramSpeedMhz: ramDetails.speedMhz,
-      ramSlotsValue: ramDetails.slots,
-      psuType: powerSupplyDetails.psuType,
-      psuFormFactor: powerSupplyDetails.formFactor,
-      psuModular: powerSupplyDetails.modular,
-      psuWattage: powerSupplyDetails.wattage,
-      caseFormFactor: caseDetails.formFactor,
-      caseFormFactors: caseDetails.formFactors,
-      casePsuFormFactor: caseDetails.psuFormFactor,
-      caseMaxGpuLength: caseDetails.maxGpuLength,
-      storageInterface: storageDetails.interface,
-      storageCapacityGb: storageDetails.capacityGb,
-      storageType: storageDetails.type,
-      soundSlotTypeValue: soundCardDetails.slotType,
-    })
+    .select()
     .from(components)
-    .leftJoin(motherboardDetails, eq(motherboardDetails.componentId, components.id))
-    .leftJoin(cpuDetails, eq(cpuDetails.componentId, components.id))
-    .leftJoin(videoCardDetails, eq(videoCardDetails.componentId, components.id))
-    .leftJoin(ramDetails, eq(ramDetails.componentId, components.id))
-    .leftJoin(powerSupplyDetails, eq(powerSupplyDetails.componentId, components.id))
-    .leftJoin(caseDetails, eq(caseDetails.componentId, components.id))
-    .leftJoin(storageDetails, eq(storageDetails.componentId, components.id))
-    .leftJoin(soundCardDetails, eq(soundCardDetails.componentId, components.id))
     .where(where)
     .orderBy(desc(components.createdAt), asc(components.id))
-    .limit(data.limit)
-    .offset((data.page - 1) * data.limit);
+    .limit(filters.limit)
+    .offset((filters.page - 1) * filters.limit);
 
   const componentIds = rows.map((row) => row.id);
   const imageRows = componentIds.length
@@ -279,86 +327,55 @@ export const listParts = async (data: {
         .orderBy(asc(componentImages.sortOrder))
     : [];
 
-  const imagesByComponent = mapImageList(imageRows);
-
   return {
     total: Number(total ?? 0),
-    parts: rows.map((row) => ({
+    parts: mapRowsToParts(rows, mapImageList(imageRows)),
+  };
+};
+
+const loadPartLogs = async (componentId: number) => {
+  const [testRows, restorationRows] = await Promise.all([
+    db
+      .select()
+      .from(componentTestLogs)
+      .where(eq(componentTestLogs.componentId, componentId))
+      .orderBy(desc(componentTestLogs.createdAt)),
+    db
+      .select()
+      .from(componentRestorationLogs)
+      .where(eq(componentRestorationLogs.componentId, componentId))
+      .orderBy(desc(componentRestorationLogs.createdAt)),
+  ]);
+
+  return {
+    testLogs: testRows.map((row) => ({
       id: row.id,
-      category: fromDbComponentType(row.type) as ApiCategory,
-      ownerUserId: row.ownerUserId,
-      name: row.name,
-      manufacturer: row.manufacturer ?? null,
-      model: row.model ?? null,
-      description: row.description ?? null,
-      visibility: row.visibility,
-      approvalStatus: row.approvalStatus,
-      specs: mapSpecs(row),
-      images: imagesByComponent.get(row.id) ?? [],
-    })) satisfies PartRecord[],
+      date: row.testedAt,
+      testType: row.testType,
+      result: row.result,
+      softwareUsed: row.softwareUsed,
+      notes: row.notes,
+      photos: row.photos ?? [],
+    })),
+    restorationLogs: restorationRows.map((row) => ({
+      id: row.id,
+      date: row.restoredAt,
+      workPerformed: row.workPerformed,
+      partsReplaced: row.partsReplaced,
+      problemsFound: row.problemsFound,
+      photosBefore: row.photosBefore ?? [],
+      photosAfter: row.photosAfter ?? [],
+    })),
   };
 };
 
 export const getPartById = async (id: number, userId?: number) => {
-  const where = and(
-    eq(components.id, id),
-    buildVisibilityFilter(userId),
-    isNull(components.deletedAt)
-  );
-
   const [row] = await db
-    .select({
-      id: components.id,
-      type: components.type,
-      ownerUserId: components.ownerUserId,
-      name: components.name,
-      manufacturer: components.manufacturer,
-      model: components.model,
-      description: components.description,
-      visibility: components.visibility,
-      approvalStatus: components.approvalStatus,
-      cpuSocket: motherboardDetails.cpuSocket,
-      motherboardFormFactor: motherboardDetails.formFactor,
-      ramType: motherboardDetails.ramType,
-      ramSlots: motherboardDetails.ramSlots,
-      pciSlots: motherboardDetails.pciSlots,
-      gpuSlotType: motherboardDetails.gpuSlotType,
-      soundSlotType: motherboardDetails.soundSlotType,
-      cpuSocketValue: cpuDetails.socket,
-      cpuTdp: cpuDetails.tdp,
-      cpuCores: cpuDetails.cores,
-      cpuThreads: cpuDetails.threads,
-      videoSlotType: videoCardDetails.slotType,
-      videoTdp: videoCardDetails.tdp,
-      videoLength: videoCardDetails.lengthMm,
-      vramGb: videoCardDetails.vramGb,
-      ramTypeValue: ramDetails.type,
-      ramCapacityGb: ramDetails.capacityGb,
-      ramSpeedMhz: ramDetails.speedMhz,
-      ramSlotsValue: ramDetails.slots,
-      psuType: powerSupplyDetails.psuType,
-      psuFormFactor: powerSupplyDetails.formFactor,
-      psuModular: powerSupplyDetails.modular,
-      psuWattage: powerSupplyDetails.wattage,
-      caseFormFactor: caseDetails.formFactor,
-      caseFormFactors: caseDetails.formFactors,
-      casePsuFormFactor: caseDetails.psuFormFactor,
-      caseMaxGpuLength: caseDetails.maxGpuLength,
-      storageInterface: storageDetails.interface,
-      storageCapacityGb: storageDetails.capacityGb,
-      storageType: storageDetails.type,
-      soundSlotTypeValue: soundCardDetails.slotType,
-    })
+    .select()
     .from(components)
-    .leftJoin(motherboardDetails, eq(motherboardDetails.componentId, components.id))
-    .leftJoin(cpuDetails, eq(cpuDetails.componentId, components.id))
-    .leftJoin(videoCardDetails, eq(videoCardDetails.componentId, components.id))
-    .leftJoin(ramDetails, eq(ramDetails.componentId, components.id))
-    .leftJoin(powerSupplyDetails, eq(powerSupplyDetails.componentId, components.id))
-    .leftJoin(caseDetails, eq(caseDetails.componentId, components.id))
-    .leftJoin(storageDetails, eq(storageDetails.componentId, components.id))
-    .leftJoin(soundCardDetails, eq(soundCardDetails.componentId, components.id))
-    .where(where)
+    .where(
+      and(eq(components.id, id), buildVisibilityFilter(userId), isNull(components.deletedAt))
+    )
     .limit(1);
 
   if (!row) {
@@ -376,23 +393,13 @@ export const getPartById = async (id: number, userId?: number) => {
     .where(eq(componentImages.componentId, row.id))
     .orderBy(asc(componentImages.sortOrder));
 
-  return {
-    id: row.id,
-    category: fromDbComponentType(row.type) as ApiCategory,
-    ownerUserId: row.ownerUserId,
-    name: row.name,
-    manufacturer: row.manufacturer ?? null,
-    model: row.model ?? null,
-    description: row.description ?? null,
-    visibility: row.visibility,
-    approvalStatus: row.approvalStatus,
-    specs: mapSpecs(row),
-    images: imageRows.map((image) => ({
-      url: image.url,
-      altText: image.altText,
-      sortOrder: image.sortOrder,
-    })),
-  } satisfies PartRecord;
+  const logs = await loadPartLogs(row.id);
+  return mapRowsToParts(
+    [row],
+    mapImageList(imageRows),
+    new Map([[row.id, logs.testLogs]]),
+    new Map([[row.id, logs.restorationLogs]])
+  )[0];
 };
 
 export const getPartsByIds = async (ids: number[], userId?: number) => {
@@ -400,65 +407,16 @@ export const getPartsByIds = async (ids: number[], userId?: number) => {
     return [] as PartRecord[];
   }
 
-  const where = and(
-    inArray(components.id, ids),
-    buildVisibilityFilter(userId),
-    isNull(components.deletedAt)
-  );
-
   const rows = await db
-    .select({
-      id: components.id,
-      type: components.type,
-      ownerUserId: components.ownerUserId,
-      name: components.name,
-      manufacturer: components.manufacturer,
-      model: components.model,
-      description: components.description,
-      visibility: components.visibility,
-      approvalStatus: components.approvalStatus,
-      cpuSocket: motherboardDetails.cpuSocket,
-      motherboardFormFactor: motherboardDetails.formFactor,
-      ramType: motherboardDetails.ramType,
-      ramSlots: motherboardDetails.ramSlots,
-      pciSlots: motherboardDetails.pciSlots,
-      gpuSlotType: motherboardDetails.gpuSlotType,
-      soundSlotType: motherboardDetails.soundSlotType,
-      cpuSocketValue: cpuDetails.socket,
-      cpuTdp: cpuDetails.tdp,
-      cpuCores: cpuDetails.cores,
-      cpuThreads: cpuDetails.threads,
-      videoSlotType: videoCardDetails.slotType,
-      videoTdp: videoCardDetails.tdp,
-      videoLength: videoCardDetails.lengthMm,
-      vramGb: videoCardDetails.vramGb,
-      ramTypeValue: ramDetails.type,
-      ramCapacityGb: ramDetails.capacityGb,
-      ramSpeedMhz: ramDetails.speedMhz,
-      ramSlotsValue: ramDetails.slots,
-      psuType: powerSupplyDetails.psuType,
-      psuFormFactor: powerSupplyDetails.formFactor,
-      psuModular: powerSupplyDetails.modular,
-      psuWattage: powerSupplyDetails.wattage,
-      caseFormFactor: caseDetails.formFactor,
-      caseFormFactors: caseDetails.formFactors,
-      casePsuFormFactor: caseDetails.psuFormFactor,
-      caseMaxGpuLength: caseDetails.maxGpuLength,
-      storageInterface: storageDetails.interface,
-      storageCapacityGb: storageDetails.capacityGb,
-      storageType: storageDetails.type,
-      soundSlotTypeValue: soundCardDetails.slotType,
-    })
+    .select()
     .from(components)
-    .leftJoin(motherboardDetails, eq(motherboardDetails.componentId, components.id))
-    .leftJoin(cpuDetails, eq(cpuDetails.componentId, components.id))
-    .leftJoin(videoCardDetails, eq(videoCardDetails.componentId, components.id))
-    .leftJoin(ramDetails, eq(ramDetails.componentId, components.id))
-    .leftJoin(powerSupplyDetails, eq(powerSupplyDetails.componentId, components.id))
-    .leftJoin(caseDetails, eq(caseDetails.componentId, components.id))
-    .leftJoin(storageDetails, eq(storageDetails.componentId, components.id))
-    .leftJoin(soundCardDetails, eq(soundCardDetails.componentId, components.id))
-    .where(where)
+    .where(
+      and(
+        inArray(components.id, ids),
+        buildVisibilityFilter(userId),
+        isNull(components.deletedAt)
+      )
+    )
     .orderBy(asc(components.id));
 
   const imageRows = await db
@@ -472,36 +430,51 @@ export const getPartsByIds = async (ids: number[], userId?: number) => {
     .where(inArray(componentImages.componentId, ids))
     .orderBy(asc(componentImages.sortOrder));
 
-  const imagesByComponent = mapImageList(imageRows);
-
-  return rows.map((row) => ({
-    id: row.id,
-    category: fromDbComponentType(row.type) as ApiCategory,
-    ownerUserId: row.ownerUserId,
-    name: row.name,
-    manufacturer: row.manufacturer ?? null,
-    model: row.model ?? null,
-    description: row.description ?? null,
-    visibility: row.visibility,
-    approvalStatus: row.approvalStatus,
-    specs: mapSpecs(row),
-    images: imagesByComponent.get(row.id) ?? [],
-  })) satisfies PartRecord[];
+  return mapRowsToParts(rows, mapImageList(imageRows));
 };
 
-export const createPart = async (data: {
-  userId: number;
-  userRole: "admin" | "moderator" | "user";
-  category: ApiCategory;
-  name: string;
-  manufacturer?: string;
-  model?: string;
-  description?: string;
-  visibility: "private" | "public";
-  specs: Record<string, unknown>;
-  imageUrl?: string | null;
-}) => {
-  const dbType = toDbComponentType(data.category);
+const insertLogs = async (
+  componentId: number,
+  testLogs: TestLogEntry[],
+  restorationLogs: RestorationLogEntry[]
+) => {
+  const cleanTestLogs = testLogs.filter(
+    (log) => log.date || log.testType || log.result || log.softwareUsed || log.notes
+  );
+  const cleanRestorationLogs = restorationLogs.filter(
+    (log) => log.date || log.workPerformed || log.partsReplaced || log.problemsFound
+  );
+
+  if (cleanTestLogs.length) {
+    await db.insert(componentTestLogs).values(
+      cleanTestLogs.map((log) => ({
+        componentId,
+        testedAt: log.date ?? null,
+        testType: log.testType ?? null,
+        result: log.result ?? null,
+        softwareUsed: log.softwareUsed ?? null,
+        notes: log.notes ?? null,
+        photos: log.photos ?? [],
+      }))
+    );
+  }
+
+  if (cleanRestorationLogs.length) {
+    await db.insert(componentRestorationLogs).values(
+      cleanRestorationLogs.map((log) => ({
+        componentId,
+        restoredAt: log.date ?? null,
+        workPerformed: log.workPerformed ?? null,
+        partsReplaced: log.partsReplaced ?? null,
+        problemsFound: log.problemsFound ?? null,
+        photosBefore: log.photosBefore ?? [],
+        photosAfter: log.photosAfter ?? [],
+      }))
+    );
+  }
+};
+
+export const createPart = async (data: PartInput) => {
   const approvalStatus =
     data.visibility === "public" && data.userRole === "user"
       ? "pending"
@@ -511,18 +484,32 @@ export const createPart = async (data: {
     .insert(components)
     .values({
       ownerUserId: data.userId,
-      type: dbType,
+      type: toDbComponentType(data.category),
+      categorySlug: data.category,
       name: data.name,
       manufacturer: data.manufacturer,
       model: data.model,
+      yearEra: data.yearEra,
+      countryOfOrigin: data.countryOfOrigin,
+      serialNumber: data.serialNumber,
+      inventoryNumber: data.inventoryNumber,
+      condition: data.condition,
       description: data.description,
+      notes: data.notes,
+      tags: data.tags,
+      location: data.location,
+      acquisitionDate: data.acquisitionDate,
+      source: data.source,
+      purchasePrice: data.purchasePrice,
+      estimatedValue: data.estimatedValue,
+      relatedConfigurationId: data.relatedConfigurationId ?? null,
       visibility: data.visibility,
       approvalStatus,
       approvedAt: approvalStatus === "approved" ? new Date() : null,
+      specs: data.specs,
+      customFields: data.customFields,
     })
     .returning({ id: components.id });
-
-  await insertPartDetails(component.id, data.category, data.specs);
 
   if (data.imageUrl) {
     await db.insert(componentImages).values({
@@ -532,115 +519,11 @@ export const createPart = async (data: {
     });
   }
 
+  await insertLogs(component.id, data.testLogs, data.restorationLogs);
   return component.id;
 };
 
-const insertPartDetails = async (
-  componentId: number,
-  category: ApiCategory,
-  specs: Record<string, unknown>
-) => {
-  switch (category) {
-    case "motherboard":
-      await db.insert(motherboardDetails).values({
-        componentId,
-        cpuSocket: String(specs.socket),
-        formFactor: String(specs.formFactor),
-        ramType: String(specs.ramType),
-        ramSlots: Number(specs.ramSlots),
-        pciSlots: Array.isArray(specs.pciSlots)
-          ? (specs.pciSlots as string[])
-          : [],
-        gpuSlotType: Array.isArray(specs.pciSlots)
-          ? String((specs.pciSlots as string[])[0] ?? "")
-          : "",
-        soundSlotType: Array.isArray(specs.pciSlots)
-          ? String((specs.pciSlots as string[])[1] ?? "")
-          : "",
-      });
-      return;
-    case "cpu":
-      await db.insert(cpuDetails).values({
-        componentId,
-        socket: String(specs.socket),
-        tdp: Number(specs.tdp),
-        cores: Number(specs.cores),
-        threads: Number(specs.threads),
-      });
-      return;
-    case "gpu":
-      await db.insert(videoCardDetails).values({
-        componentId,
-        slotType: String(specs.pciSlot),
-        tdp: Number(specs.tdp),
-        lengthMm: specs.length ? Number(specs.length) : null,
-        vramGb: Number(specs.vram),
-      });
-      return;
-    case "ram":
-      await db.insert(ramDetails).values({
-        componentId,
-        type: String(specs.type),
-        capacityGb: Number(specs.capacity),
-        speedMhz: Number(specs.speed),
-        slots: Number(specs.slots),
-      });
-      return;
-    case "psu":
-      const psuFormFactor = String(specs.formFactor).toLowerCase();
-      await db.insert(powerSupplyDetails).values({
-        componentId,
-        psuType: psuFormFactor as "atx" | "sfx" | "tfx" | "flex_atx",
-        formFactor: psuFormFactor,
-        modular: Boolean(specs.modular),
-        wattage: Number(specs.wattage),
-      });
-      return;
-    case "case":
-      const caseFormFactors = Array.isArray(specs.formFactor)
-        ? (specs.formFactor as string[]).map((value) => value.toLowerCase())
-        : [];
-      const casePsuFormFactor = String(specs.psuFormFactor).toLowerCase();
-      await db.insert(caseDetails).values({
-        componentId,
-        formFactor: caseFormFactors[0] ?? null,
-        formFactors: caseFormFactors,
-        psuFormFactor: casePsuFormFactor,
-        maxGpuLength: Number(specs.maxGpuLength),
-      });
-      return;
-    case "storage":
-      await db.insert(storageDetails).values({
-        componentId,
-        interface: String(specs.interface),
-        capacityGb: Number(specs.capacity),
-        type: String(specs.type),
-      });
-      return;
-    case "soundcard":
-      await db.insert(soundCardDetails).values({
-        componentId,
-        slotType: String(specs.pciSlot),
-      });
-      return;
-    default:
-      throw new ApiError("Unknown category", 400);
-  }
-};
-
-export const updatePart = async (data: {
-  partId: number;
-  userId: number;
-  userRole: "admin" | "moderator" | "user";
-  category: ApiCategory;
-  name: string;
-  manufacturer?: string;
-  model?: string;
-  description?: string;
-  visibility: "private" | "public";
-  specs: Record<string, unknown>;
-  imageUrl?: string | null;
-}) => {
+export const updatePart = async (data: PartInput & { partId: number }) => {
   const [existing] = await db
     .select({ id: components.id, ownerUserId: components.ownerUserId })
     .from(components)
@@ -659,22 +542,45 @@ export const updatePart = async (data: {
   await db
     .update(components)
     .set({
+      type: toDbComponentType(data.category),
+      categorySlug: data.category,
       name: data.name,
       manufacturer: data.manufacturer,
       model: data.model,
+      yearEra: data.yearEra,
+      countryOfOrigin: data.countryOfOrigin,
+      serialNumber: data.serialNumber,
+      inventoryNumber: data.inventoryNumber,
+      condition: data.condition,
       description: data.description,
+      notes: data.notes,
+      tags: data.tags,
+      location: data.location,
+      acquisitionDate: data.acquisitionDate,
+      source: data.source,
+      purchasePrice: data.purchasePrice,
+      estimatedValue: data.estimatedValue,
+      relatedConfigurationId: data.relatedConfigurationId ?? null,
       visibility: data.visibility,
       approvalStatus,
       approvedAt: approvalStatus === "approved" ? new Date() : null,
+      specs: data.specs,
+      customFields: data.customFields,
       updatedAt: new Date(),
     })
     .where(eq(components.id, data.partId));
 
-  await replacePartDetails(data.partId, data.category, data.specs);
-
   if (data.imageUrl !== undefined) {
     await replacePartImage(data.partId, data.imageUrl);
   }
+
+  await db
+    .delete(componentTestLogs)
+    .where(eq(componentTestLogs.componentId, data.partId));
+  await db
+    .delete(componentRestorationLogs)
+    .where(eq(componentRestorationLogs.componentId, data.partId));
+  await insertLogs(data.partId, data.testLogs, data.restorationLogs);
 
   return data.partId;
 };
@@ -697,192 +603,6 @@ const replacePartImage = async (partId: number, imageUrl: string | null) => {
       url: imageUrl,
       sortOrder: 0,
     });
-  }
-};
-
-const replacePartDetails = async (
-  componentId: number,
-  category: ApiCategory,
-  specs: Record<string, unknown>
-) => {
-  switch (category) {
-    case "motherboard":
-      await db
-        .insert(motherboardDetails)
-        .values({
-          componentId,
-          cpuSocket: String(specs.socket),
-          formFactor: String(specs.formFactor),
-          ramType: String(specs.ramType),
-          ramSlots: Number(specs.ramSlots),
-          pciSlots: Array.isArray(specs.pciSlots)
-            ? (specs.pciSlots as string[])
-            : [],
-          gpuSlotType: Array.isArray(specs.pciSlots)
-            ? String((specs.pciSlots as string[])[0] ?? "")
-            : "",
-          soundSlotType: Array.isArray(specs.pciSlots)
-            ? String((specs.pciSlots as string[])[1] ?? "")
-            : "",
-        })
-        .onConflictDoUpdate({
-          target: motherboardDetails.componentId,
-          set: {
-            cpuSocket: String(specs.socket),
-            formFactor: String(specs.formFactor),
-            ramType: String(specs.ramType),
-            ramSlots: Number(specs.ramSlots),
-            pciSlots: Array.isArray(specs.pciSlots)
-              ? (specs.pciSlots as string[])
-              : [],
-            gpuSlotType: Array.isArray(specs.pciSlots)
-              ? String((specs.pciSlots as string[])[0] ?? "")
-              : "",
-            soundSlotType: Array.isArray(specs.pciSlots)
-              ? String((specs.pciSlots as string[])[1] ?? "")
-              : "",
-          },
-        });
-      return;
-    case "cpu":
-      await db
-        .insert(cpuDetails)
-        .values({
-          componentId,
-          socket: String(specs.socket),
-          tdp: Number(specs.tdp),
-          cores: Number(specs.cores),
-          threads: Number(specs.threads),
-        })
-        .onConflictDoUpdate({
-          target: cpuDetails.componentId,
-          set: {
-            socket: String(specs.socket),
-            tdp: Number(specs.tdp),
-            cores: Number(specs.cores),
-            threads: Number(specs.threads),
-          },
-        });
-      return;
-    case "gpu":
-      await db
-        .insert(videoCardDetails)
-        .values({
-          componentId,
-          slotType: String(specs.pciSlot),
-          tdp: Number(specs.tdp),
-          lengthMm: specs.length ? Number(specs.length) : null,
-          vramGb: Number(specs.vram),
-        })
-        .onConflictDoUpdate({
-          target: videoCardDetails.componentId,
-          set: {
-            slotType: String(specs.pciSlot),
-            tdp: Number(specs.tdp),
-            lengthMm: specs.length ? Number(specs.length) : null,
-            vramGb: Number(specs.vram),
-          },
-        });
-      return;
-    case "ram":
-      await db
-        .insert(ramDetails)
-        .values({
-          componentId,
-          type: String(specs.type),
-          capacityGb: Number(specs.capacity),
-          speedMhz: Number(specs.speed),
-          slots: Number(specs.slots),
-        })
-        .onConflictDoUpdate({
-          target: ramDetails.componentId,
-          set: {
-            type: String(specs.type),
-            capacityGb: Number(specs.capacity),
-            speedMhz: Number(specs.speed),
-            slots: Number(specs.slots),
-          },
-        });
-      return;
-    case "psu":
-      const psuFormFactor = String(specs.formFactor).toLowerCase();
-      await db
-        .insert(powerSupplyDetails)
-        .values({
-          componentId,
-          psuType: psuFormFactor as "atx" | "sfx" | "tfx" | "flex_atx",
-          formFactor: psuFormFactor,
-          modular: Boolean(specs.modular),
-          wattage: Number(specs.wattage),
-        })
-        .onConflictDoUpdate({
-          target: powerSupplyDetails.componentId,
-          set: {
-            psuType: psuFormFactor as "atx" | "sfx" | "tfx" | "flex_atx",
-            formFactor: psuFormFactor,
-            modular: Boolean(specs.modular),
-            wattage: Number(specs.wattage),
-          },
-        });
-      return;
-    case "case":
-      const caseFormFactors = Array.isArray(specs.formFactor)
-        ? (specs.formFactor as string[]).map((value) => value.toLowerCase())
-        : [];
-      const casePsuFormFactor = String(specs.psuFormFactor).toLowerCase();
-      await db
-        .insert(caseDetails)
-        .values({
-          componentId,
-          formFactor: caseFormFactors[0] ?? null,
-          formFactors: caseFormFactors,
-          psuFormFactor: casePsuFormFactor,
-          maxGpuLength: Number(specs.maxGpuLength),
-        })
-        .onConflictDoUpdate({
-          target: caseDetails.componentId,
-          set: {
-            formFactor: caseFormFactors[0] ?? null,
-            formFactors: caseFormFactors,
-            psuFormFactor: casePsuFormFactor,
-            maxGpuLength: Number(specs.maxGpuLength),
-          },
-        });
-      return;
-    case "storage":
-      await db
-        .insert(storageDetails)
-        .values({
-          componentId,
-          interface: String(specs.interface),
-          capacityGb: Number(specs.capacity),
-          type: String(specs.type),
-        })
-        .onConflictDoUpdate({
-          target: storageDetails.componentId,
-          set: {
-            interface: String(specs.interface),
-            capacityGb: Number(specs.capacity),
-            type: String(specs.type),
-          },
-        });
-      return;
-    case "soundcard":
-      await db
-        .insert(soundCardDetails)
-        .values({
-          componentId,
-          slotType: String(specs.pciSlot),
-        })
-        .onConflictDoUpdate({
-          target: soundCardDetails.componentId,
-          set: {
-            slotType: String(specs.pciSlot),
-          },
-        });
-      return;
-    default:
-      throw new ApiError("Unknown category", 400);
   }
 };
 

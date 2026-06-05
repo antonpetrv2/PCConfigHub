@@ -18,10 +18,10 @@ export default async function Home() {
     listParts({ userId: user?.id, page: 1, limit: 4 }),
   ]);
 
-  const primaryHref = user ? "/builder" : "/login";
-  const primaryLabel = user ? "Start builder" : "Login";
-  const secondaryHref = user ? "/configurations" : "/register";
-  const secondaryLabel = user ? "View configurations" : "Register";
+  const primaryHref = user ? "/builder" : "/configurations";
+  const primaryLabel = user ? "Start builder" : "View configurations";
+  const secondaryHref = user ? "/configurations" : "/login";
+  const secondaryLabel = user ? "View configurations" : "Login";
 
   return (
     <section className="relative overflow-hidden">

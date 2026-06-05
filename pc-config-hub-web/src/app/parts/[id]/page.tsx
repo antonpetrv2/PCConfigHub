@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 import CommentsSection from "@/app/comments-section";
 import AddPartLauncher from "@/app/parts/add-part-launcher";
 import { createPartCommentAction } from "@/actions/comments";
-import { categoryLabels } from "@/lib/api/catalog";
+import {
+  categoryLabels,
+  conditionLabels,
+  generalFields,
+  getCategoryFields,
+} from "@/lib/api/catalog";
 import { getCurrentUser } from "@/lib/auth";
 import { listPartComments } from "@/services/api/comments-service";
 import { getPartById } from "@/services/api/parts-service";
@@ -55,13 +60,33 @@ export default async function PartDetailsPage({
   const specs = Object.entries(part.specs)
     .map(([key, value]) => [key, formatSpecValue(value)] as const)
     .filter((entry): entry is readonly [string, string] => Boolean(entry[1]));
+  const fieldLabels = new Map(
+    [...generalFields, ...getCategoryFields(part.category)].map((field) => [
+      field.key,
+      field.label,
+    ])
+  );
+  const generalSpecs = [
+    ["yearEra", part.yearEra],
+    ["countryOfOrigin", part.countryOfOrigin],
+    ["serialNumber", part.serialNumber],
+    ["inventoryNumber", part.inventoryNumber],
+    ["condition", conditionLabels[part.condition]],
+    ["location", part.location],
+    ["acquisitionDate", part.acquisitionDate],
+    ["source", part.source],
+    ["purchasePrice", part.purchasePrice],
+    ["estimatedValue", part.estimatedValue],
+  ]
+    .map(([key, value]) => [String(key), formatSpecValue(value)] as const)
+    .filter((entry): entry is readonly [string, string] => Boolean(entry[1]));
+  const customSpecs = Object.entries(part.customFields)
+    .map(([key, value]) => [key, formatSpecValue(value)] as const)
+    .filter((entry): entry is readonly [string, string] => Boolean(entry[1]));
   const canEdit = user?.id === part.ownerUserId;
 
   return (
     <section className="relative overflow-hidden">
-      <div className="pointer-events-none absolute -left-32 top-12 h-64 w-64 rounded-full bg-[#30f2ff]/15 blur-3xl" />
-      <div className="pointer-events-none absolute right-12 top-24 h-56 w-56 rounded-full bg-[#ff5bf1]/15 blur-3xl" />
-
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-16">
         <header className="flex flex-col gap-3">
           <Link
@@ -106,35 +131,65 @@ export default async function PartDetailsPage({
               <span>{part.approvalStatus}</span>
               {part.manufacturer ? <span>{part.manufacturer}</span> : null}
               {part.model ? <span>{part.model}</span> : null}
+              {part.yearEra ? <span>{part.yearEra}</span> : null}
             </div>
+            {part.tags.length ? (
+              <div className="flex flex-wrap gap-2 px-5 pb-5">
+                {part.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-[#30f2ff]/30 px-2 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-[#30f2ff]"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <aside className="rounded-3xl border border-white/10 bg-[#121126]/90 p-5">
             <p className="text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
+              Collection data
+            </p>
+            <SpecGrid specs={generalSpecs} labels={fieldLabels} />
+            <p className="mt-6 text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
               Specifications
             </p>
             {specs.length ? (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {specs.map(([key, value]) => (
-                  <div
-                    key={key}
-                    className="rounded-2xl border border-white/10 bg-[#0c0b14] px-4 py-3"
-                  >
-                    <p className="text-[0.65rem] uppercase tracking-[0.24em] text-[#b3b7d4]">
-                      {key}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-[#f2f3ff]">
-                      {value}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <SpecGrid specs={specs} labels={fieldLabels} />
             ) : (
               <p className="mt-4 text-sm text-[#b3b7d4]">
                 No specifications recorded.
               </p>
             )}
+            {customSpecs.length ? (
+              <>
+                <p className="mt-6 text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
+                  Custom fields
+                </p>
+                <SpecGrid specs={customSpecs} labels={fieldLabels} />
+              </>
+            ) : null}
           </aside>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <LogPanel
+            title="Test log"
+            emptyText="No test entries recorded."
+            entries={part.testLogs.map((log) => ({
+              title: [log.date, log.testType, log.result].filter(Boolean).join(" / "),
+              body: [log.softwareUsed, log.notes].filter(Boolean).join("\n"),
+            }))}
+          />
+          <LogPanel
+            title="Restoration log"
+            emptyText="No restoration entries recorded."
+            entries={part.restorationLogs.map((log) => ({
+              title: [log.date, log.workPerformed].filter(Boolean).join(" / "),
+              body: [log.partsReplaced, log.problemsFound].filter(Boolean).join("\n"),
+            }))}
+          />
         </div>
 
         <CommentsSection
@@ -146,6 +201,71 @@ export default async function PartDetailsPage({
           status={commentStatus}
         />
       </div>
+    </section>
+  );
+}
+
+function SpecGrid({
+  specs,
+  labels,
+}: {
+  specs: Array<readonly [string, string]>;
+  labels: Map<string, string>;
+}) {
+  return (
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      {specs.map(([key, value]) => (
+        <div
+          key={key}
+          className="rounded-2xl border border-white/10 bg-[#0c0b14] px-4 py-3"
+        >
+          <p className="text-[0.65rem] uppercase tracking-[0.24em] text-[#b3b7d4]">
+            {labels.get(key) ?? key}
+          </p>
+          <p className="mt-1 whitespace-pre-line text-sm font-semibold text-[#f2f3ff]">
+            {value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LogPanel({
+  title,
+  emptyText,
+  entries,
+}: {
+  title: string;
+  emptyText: string;
+  entries: Array<{ title: string; body: string }>;
+}) {
+  return (
+    <section className="rounded-3xl border border-white/10 bg-[#121126]/90 p-5">
+      <p className="text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
+        {title}
+      </p>
+      {entries.length ? (
+        <div className="mt-4 space-y-3">
+          {entries.map((entry, index) => (
+            <article
+              key={`${entry.title}-${index}`}
+              className="rounded-2xl border border-white/10 bg-[#0c0b14] px-4 py-3"
+            >
+              <p className="text-sm font-semibold text-[#f2f3ff]">
+                {entry.title || "Entry"}
+              </p>
+              {entry.body ? (
+                <p className="mt-2 whitespace-pre-line text-sm text-[#b3b7d4]">
+                  {entry.body}
+                </p>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-[#b3b7d4]">{emptyText}</p>
+      )}
     </section>
   );
 }

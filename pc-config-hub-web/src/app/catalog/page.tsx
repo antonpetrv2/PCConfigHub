@@ -1,104 +1,17 @@
 import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth";
-import Pagination from "@/app/pagination";
 import AddPartLauncher from "@/app/parts/add-part-launcher";
+import CatalogResults from "@/app/catalog/catalog-results";
 import { categoryLabels, categoryOrder } from "@/lib/api/catalog";
 import type { ApiCategory } from "@/lib/api/types";
 import { listParts } from "@/services/api/parts-service";
 
-const compactSpecs = (values: Array<string | null | undefined>) =>
-  values.filter((value): value is string => Boolean(value));
-
-const formatValue = (value: unknown) => {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  if (Array.isArray(value)) {
-    return value.length ? value.join(", ") : null;
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
-  }
-
-  return String(value);
-};
-
-const spec = (
-  specs: Record<string, unknown>,
-  key: string,
-  label: string,
-  suffix = ""
-) => {
-  const value = formatValue(specs[key]);
-  return value ? `${label}: ${value}${suffix}` : null;
-};
-
-const formatSpecs = (part: {
-  category: ApiCategory;
-  specs: Record<string, unknown>;
-}) => {
-  switch (part.category) {
-    case "motherboard":
-      return compactSpecs([
-        spec(part.specs, "socket", "CPU socket"),
-        spec(part.specs, "ramType", "RAM"),
-        spec(part.specs, "ramSlots", "RAM slots"),
-        spec(part.specs, "pciSlots", "PCI slots"),
-      ]);
-    case "cpu":
-      return compactSpecs([
-        spec(part.specs, "socket", "Socket"),
-        spec(part.specs, "cores", "Cores"),
-        spec(part.specs, "threads", "Threads"),
-        spec(part.specs, "tdp", "TDP", "W"),
-      ]);
-    case "gpu":
-      return compactSpecs([
-        spec(part.specs, "pciSlot", "Slot"),
-        spec(part.specs, "vram", "VRAM", " GB"),
-        spec(part.specs, "length", "Length", " mm"),
-        spec(part.specs, "tdp", "TDP", "W"),
-      ]);
-    case "ram":
-      return compactSpecs([
-        spec(part.specs, "type", "Type"),
-        spec(part.specs, "capacity", "Capacity", " GB"),
-        spec(part.specs, "speed", "Speed", " MHz"),
-        spec(part.specs, "slots", "Slots"),
-      ]);
-    case "psu":
-      return compactSpecs([
-        spec(part.specs, "formFactor", "Form factor"),
-        spec(part.specs, "wattage", "Wattage", "W"),
-        spec(part.specs, "modular", "Modular"),
-      ]);
-    case "case":
-      return compactSpecs([
-        spec(part.specs, "formFactor", "Form factors"),
-        spec(part.specs, "psuFormFactor", "PSU support"),
-        spec(part.specs, "maxGpuLength", "Max GPU", " mm"),
-      ]);
-    case "storage":
-      return compactSpecs([
-        spec(part.specs, "interface", "Interface"),
-        spec(part.specs, "capacity", "Capacity", " GB"),
-        spec(part.specs, "type", "Type"),
-      ]);
-    case "soundcard":
-      return compactSpecs([spec(part.specs, "pciSlot", "Slot")]);
-    default:
-      return [];
-  }
-};
-
 type CatalogPageProps = {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ category?: string; page?: string }>;
 };
 
-const pageSize = 12;
+const pageSize = 10;
 
 const parsePage = (value?: string) => {
   const page = Number(value);
@@ -108,161 +21,90 @@ const parsePage = (value?: string) => {
 export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const params = await searchParams;
   const page = parsePage(params.page);
+  const category = params.category as ApiCategory | undefined;
   const user = await getCurrentUser();
   const { parts, total } = await listParts({
     userId: user?.id,
+    category,
     page,
     limit: pageSize,
   });
 
-  const grouped = parts.reduce<Record<ApiCategory, typeof parts>>(
-    (acc, part) => {
-      acc[part.category].push(part);
-      return acc;
-    },
-    {
-      motherboard: [],
-      cpu: [],
-      gpu: [],
-      ram: [],
-      psu: [],
-      case: [],
-      storage: [],
-      soundcard: [],
-    }
-  );
-
   return (
     <section className="relative overflow-hidden">
-      <div className="pointer-events-none absolute -left-32 top-12 h-64 w-64 rounded-full bg-[#30f2ff]/15 blur-3xl" />
-      <div className="pointer-events-none absolute right-12 top-24 h-56 w-56 rounded-full bg-[#ff5bf1]/15 blur-3xl" />
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
+        <header className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#0f0e1b]/70 p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.4em] text-[#b3b7d4]">
+              Hardware collection
+            </p>
+            <div className="mt-2 flex flex-wrap items-end gap-x-5 gap-y-2">
+              <h1 className="font-[var(--font-display)] text-3xl text-[#f2f3ff]">
+                Catalog
+              </h1>
+              <p className="pb-1 text-sm text-[#b3b7d4]">
+                {user
+                  ? "Showing public components plus your private inventory."
+                  : "Showing public components only. Sign in to see your private parts."}
+              </p>
+            </div>
+          </div>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-16">
-        <header className="flex flex-col gap-4">
-          <p className="text-xs uppercase tracking-[0.4em] text-[#b3b7d4]">
-            Component catalog
-          </p>
-          <h1 className="font-[var(--font-display)] text-4xl text-[#f2f3ff]">
-            Parts catalog
-          </h1>
-          <p className="max-w-2xl text-sm text-[#b3b7d4]">
-            {user
-              ? "Showing public components plus your private inventory."
-              : "Showing public components only. Sign in to see your private parts."}
-          </p>
-        </header>
-
-        {user ? (
-          <div className="rounded-3xl border border-[#30f2ff]/40 bg-[#0f0e1b]/80 p-6 text-sm text-[#b3b7d4] shadow-[0_0_20px_rgba(48,242,255,0.2)]">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
+          {user ? (
+            <div className="flex flex-col gap-3 text-sm text-[#b3b7d4] lg:max-w-xl lg:flex-row lg:items-center lg:justify-end">
+              <div className="min-w-0">
                 <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
                   Upload parts
                 </p>
-                <p className="mt-2">
-                  Add new components with specs, visibility, and an image. Public parts
-                  require approval before showing up to everyone.
+                <p className="mt-1 text-sm">
+                  Add hardware with specs, tags, logs, and photos.
                 </p>
               </div>
               <AddPartLauncher />
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </header>
 
-        {parts.length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-[#121126]/90 p-6 text-sm text-[#b3b7d4]">
-            No components available yet.
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
+            Categories
+          </p>
+          <div className="flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-[#121126]/80 p-2">
+            <Link
+              href="/catalog"
+              className={`rounded-full px-4 py-2 text-xs uppercase tracking-[0.2em] ${
+                !category
+                  ? "bg-[#30f2ff] text-[#0c0b14]"
+                  : "border border-white/10 text-[#b3b7d4]"
+              }`}
+            >
+              All
+            </Link>
+            {categoryOrder.map((item) => (
+              <Link
+                key={item}
+                href={`/catalog?category=${item}`}
+                className={`rounded-full px-4 py-2 text-xs uppercase tracking-[0.2em] ${
+                  category === item
+                    ? "bg-[#30f2ff] text-[#0c0b14]"
+                    : "border border-white/10 text-[#b3b7d4]"
+                }`}
+              >
+                {categoryLabels[item]}
+              </Link>
+            ))}
           </div>
-        ) : (
-          <div className="space-y-10">
-            {categoryOrder.map((category) => {
-              const items = grouped[category];
-              if (!items.length) {
-                return null;
-              }
+        </div>
 
-              return (
-                <section key={category} className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-[var(--font-display)] text-2xl text-[#f2f3ff]">
-                      {categoryLabels[category]}
-                    </h2>
-                    <span className="text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
-                      {items.length} items
-                    </span>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {items.map((part) => {
-                      const specs = formatSpecs(part);
-                      const canEdit = user?.id === part.ownerUserId;
-
-                      return (
-                        <article
-                          key={part.id}
-                          className="flex gap-4 rounded-3xl border border-white/10 bg-[#121126]/90 p-4"
-                        >
-                          <div className="h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-[#15142a]">
-                            {part.images[0]?.url ? (
-                              <img
-                                src={part.images[0].url}
-                                alt={part.images[0].altText ?? part.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[0.55rem] uppercase tracking-[0.3em] text-[#b3b7d4]">
-                                No image
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-1 flex-col gap-2">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-base font-semibold text-[#f2f3ff]">
-                                  <Link
-                                    href={`/parts/${part.id}`}
-                                    className="hover:text-[#30f2ff]"
-                                  >
-                                    {part.name}
-                                  </Link>
-                                </p>
-                                <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
-                                  {part.visibility === "public" ? "Public" : "Private"}
-                                </p>
-                              </div>
-                              {canEdit ? <AddPartLauncher part={part} /> : null}
-                            </div>
-                            <p className="text-sm text-[#b3b7d4]">
-                              {part.description ?? "No description yet."}
-                            </p>
-                            {specs.length ? (
-                              <div className="flex flex-wrap gap-2 text-[0.65rem] uppercase tracking-[0.2em] text-[#b3b7d4]">
-                                {specs.map((item) => (
-                                  <span key={item}>{item}</span>
-                                ))}
-                              </div>
-                            ) : null}
-                            <Link
-                              href={`/parts/${part.id}`}
-                              className="mt-auto w-fit text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff]"
-                            >
-                              Details and comments
-                            </Link>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </section>
-              );
-            })}
-            <Pagination
-              basePath="/catalog"
-              limit={pageSize}
-              page={page}
-              total={total}
-            />
-          </div>
-        )}
+        <CatalogResults
+          basePath="/catalog"
+          category={category}
+          initialPage={page}
+          initialParts={parts}
+          initialTotal={total}
+          limit={pageSize}
+          userId={user?.id}
+        />
       </div>
     </section>
   );
