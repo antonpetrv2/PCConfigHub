@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import LocalizedText from "@/app/localized-text";
 import Pagination from "@/app/pagination";
 import { getCurrentUser } from "@/lib/auth";
 import { listConfigs } from "@/services/api/configs-service";
@@ -37,21 +38,21 @@ export default async function ConfigurationsPage({
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-16">
         <header className="flex flex-col gap-4">
           <p className="text-xs uppercase tracking-[0.4em] text-[#b3b7d4]">
-            Approved builds gallery
+            <LocalizedText k="configurationsEyebrow" />
           </p>
           <h1 className="font-[var(--font-display)] text-4xl text-[#f2f3ff]">
-            Ready configurations
+            <LocalizedText k="configurationsTitle" />
           </h1>
           <p className="max-w-2xl text-sm text-[#b3b7d4]">
-            {user
-              ? "Showing public builds plus your private configurations. Only builds that include a case are listed."
-              : "Showing public builds only. Sign in to see your private configurations. Only builds that include a case are listed."}
+            <LocalizedText
+              k={user ? "configurationsIntroUser" : "configurationsIntroGuest"}
+            />
           </p>
         </header>
 
         {configs.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-[#121126]/90 p-6 text-sm text-[#b3b7d4]">
-            No configurations available yet.
+            <LocalizedText k="configurationsEmpty" />
           </div>
         ) : (
           <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -72,11 +73,11 @@ export default async function ConfigurationsPage({
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
-                      No case image yet
+                      <LocalizedText k="configurationsNoCaseImage" />
                     </div>
                   )}
                   <div className="absolute bottom-3 left-3 rounded-full border border-white/10 bg-[#0f0e1b]/80 px-3 py-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.24em] text-[#f2f3ff]">
-                    View details
+                    <LocalizedText k="configurationsViewDetails" />
                   </div>
                 </Link>
                 <div className="flex min-h-[150px] flex-1 flex-col gap-2 p-4">
@@ -85,15 +86,32 @@ export default async function ConfigurationsPage({
                       {config.name}
                     </h2>
                     <span className="rounded-full border border-white/10 px-2 py-1 text-[0.55rem] uppercase tracking-[0.22em] text-[#b3b7d4]">
-                      {config.visibility === "public" ? "Public" : "Private"}
+                      <LocalizedText
+                        k={
+                          config.visibility === "public"
+                            ? "configurationsPublic"
+                            : "configurationsPrivate"
+                        }
+                      />
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-3 text-[0.68rem] uppercase tracking-[0.18em] text-[#30f2ff]">
-                    <span>{config.partsCount} parts</span>
-                    <span>{config.estimatedWattage}W est.</span>
+                    <LocalizedText
+                      as="span"
+                      k="configurationsParts"
+                      params={{ count: config.partsCount }}
+                    />
+                    <LocalizedText
+                      as="span"
+                      k="configurationsEstimatedWatts"
+                      params={{ watts: config.estimatedWattage }}
+                    />
                   </div>
                   <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[#b3b7d4]">
-                    By {config.ownerName}
+                    <LocalizedText
+                      k="configurationsByOwner"
+                      params={{ owner: config.ownerName }}
+                    />
                   </p>
                 </div>
               </article>
@@ -111,7 +129,7 @@ export default async function ConfigurationsPage({
         {user && myConfigs.length > 0 ? (
           <div className="space-y-4">
             <h2 className="font-[var(--font-display)] text-2xl text-[#f2f3ff]">
-              My configs
+              <LocalizedText k="configurationsMyConfigs" />
             </h2>
             <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {myConfigs.map((config) => (
@@ -131,7 +149,7 @@ export default async function ConfigurationsPage({
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
-                        No case image yet
+                        <LocalizedText k="configurationsNoCaseImage" />
                       </div>
                     )}
                   </Link>
@@ -141,18 +159,32 @@ export default async function ConfigurationsPage({
                         {config.name}
                       </h3>
                       <span className="rounded-full border border-white/10 px-2 py-1 text-[0.55rem] uppercase tracking-[0.22em] text-[#b3b7d4]">
-                        {config.visibility === "public" ? "Public" : "Private"}
+                        <LocalizedText
+                          k={
+                            config.visibility === "public"
+                              ? "configurationsPublic"
+                              : "configurationsPrivate"
+                          }
+                        />
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-3 text-[0.68rem] uppercase tracking-[0.18em] text-[#30f2ff]">
-                      <span>{config.partsCount} parts</span>
-                      <span>{config.estimatedWattage}W est.</span>
+                      <LocalizedText
+                        as="span"
+                        k="configurationsParts"
+                        params={{ count: config.partsCount }}
+                      />
+                      <LocalizedText
+                        as="span"
+                        k="configurationsEstimatedWatts"
+                        params={{ watts: config.estimatedWattage }}
+                      />
                     </div>
                     <Link
                       href={`/configurations/${config.id}`}
                       className="mt-2 w-fit rounded-full border border-[#30f2ff]/50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#30f2ff]"
                     >
-                      Open / manage
+                      <LocalizedText k="configurationsOpenManage" />
                     </Link>
                   </div>
                 </article>

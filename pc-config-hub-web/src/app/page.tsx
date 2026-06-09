@@ -1,6 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import Link from "next/link";
 
+import LocalizedText from "@/app/localized-text";
 import { db } from "@/db/client";
 import {
   componentImages,
@@ -18,28 +19,28 @@ import { listParts, type PartRecord } from "@/services/api/parts-service";
 const eras = [
   {
     label: "1970s",
-    hardware: "Apple II, S-100 systems, early terminals",
-    tone: "Birth of personal computing",
+    hardwareKey: "homeEra1970Hardware",
+    toneKey: "homeEra1970Tone",
   },
   {
     label: "1980s",
-    hardware: "XT, AT, Commodore, Amiga, CGA/EGA",
-    tone: "Home micros and the IBM PC standard",
+    hardwareKey: "homeEra1980Hardware",
+    toneKey: "homeEra1980Tone",
   },
   {
     label: "1990s",
-    hardware: "386, 486, Pentium, VLB, PCI, Sound Blaster",
-    tone: "DOS games, multimedia kits and beige towers",
+    hardwareKey: "homeEra1990Hardware",
+    toneKey: "homeEra1990Tone",
   },
   {
     label: "2000s",
-    hardware: "AGP, Socket A, Pentium 4, early SATA",
-    tone: "Legacy meets modern performance",
+    hardwareKey: "homeEra2000Hardware",
+    toneKey: "homeEra2000Tone",
   },
   {
     label: "2010s",
-    hardware: "Late optical media, PCIe transitions, rescue systems",
-    tone: "The last bridge before everything became sealed",
+    hardwareKey: "homeEra2010Hardware",
+    toneKey: "homeEra2010Tone",
   },
 ];
 
@@ -58,13 +59,13 @@ const platforms = [
   "Laptops",
 ];
 
-const preservationFeatures = [
-  "Collection management",
-  "Configuration linking",
-  "Restoration logs",
-  "Test logs",
-  "Hardware documentation",
-  "Historical preservation",
+const preservationFeatureKeys = [
+  "homeFeatureCollectionManagement",
+  "homeFeatureConfigurationLinking",
+  "homeFeatureRestorationLogs",
+  "homeFeatureTestLogs",
+  "homeFeatureHardwareDocs",
+  "homeFeatureHistoricalPreservation",
 ];
 
 const collectionExamples = [
@@ -75,11 +76,11 @@ const collectionExamples = [
   "Sound Card Archive",
 ];
 
-const restorationExamples = [
-  "Capacitor replacement documented with before and after photos.",
-  "Battery leakage cleaned and neutralized on a late 486 motherboard.",
-  "Retro rebuild completed with successful POST and DOS boot test.",
-  "Noisy drive diagnosed, imaged and preserved before failure.",
+const restorationExampleKeys = [
+  "homeRestorationExample1",
+  "homeRestorationExample2",
+  "homeRestorationExample3",
+  "homeRestorationExample4",
 ];
 
 const rareTerms = [
@@ -250,27 +251,26 @@ export default async function Home() {
 
           <div className="relative z-10 flex min-h-[calc(100vh-170px)] max-w-4xl flex-col justify-center gap-7">
             <p className="text-xs font-semibold uppercase tracking-[0.48em] text-[#b59b63]">
-              Living archive for vintage hardware
+              <LocalizedText k="homeHeroEyebrow" />
             </p>
             <h1 className="font-[var(--font-display)] text-5xl leading-[1.02] text-[#f6f0df] sm:text-6xl lg:text-7xl">
-              Preserving Computer History, One Machine at a Time.
+              <LocalizedText k="homeHeroTitle" />
             </h1>
             <p className="max-w-3xl text-lg leading-8 text-[#d4c8a9] sm:text-xl">
-              Document, organize and share your collection of vintage computers,
-              rare hardware, expansion cards, software, and restorations.
+              <LocalizedText k="homeHeroIntro" />
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
                 href={ctaHref}
                 className="rounded-sm border border-[#d7b56d] bg-[#d7b56d] px-6 py-4 text-xs font-black uppercase tracking-[0.22em] text-[#15110a] shadow-[0_0_24px_rgba(215,181,109,0.24)]"
               >
-                Create Collection
+                <LocalizedText k="homeCreateCollection" />
               </Link>
               <Link
                 href="/configurations"
                 className="rounded-sm border border-[#6fa36f]/70 bg-[#0f160f]/80 px-6 py-4 text-xs font-black uppercase tracking-[0.22em] text-[#b7e0a4]"
               >
-                Explore Collections
+                <LocalizedText k="homeExploreCollections" />
               </Link>
             </div>
           </div>
@@ -278,15 +278,15 @@ export default async function Home() {
 
         <section className="grid gap-px border-y border-[#3c3325] bg-[#3c3325] sm:grid-cols-2 lg:grid-cols-5">
           {[
-            ["Total collectors", stats.collectors],
-            ["Computers documented", stats.computers],
-            ["Hardware components", stats.components],
-            ["Restoration logs", stats.restorations],
-            ["Photos uploaded", stats.photos],
+            ["homeTotalCollectors", stats.collectors],
+            ["homeComputersDocumented", stats.computers],
+            ["homeHardwareComponents", stats.components],
+            ["homeRestorationLogs", stats.restorations],
+            ["homePhotosUploaded", stats.photos],
           ].map(([label, value]) => (
             <div key={label} className="bg-[#0d0c0a] px-5 py-7">
               <p className="text-[0.65rem] font-bold uppercase tracking-[0.32em] text-[#8c7d5a]">
-                {label}
+                <LocalizedText k={String(label)} />
               </p>
               <p className="mt-3 font-[var(--font-display)] text-4xl text-[#d7b56d]">
                 {formatNumber(Number(value))}
@@ -299,38 +299,48 @@ export default async function Home() {
           <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#6fa36f]">
-                Hall of Fame
+                <LocalizedText k="homeHallOfFame" />
               </p>
               <h2 className="mt-3 font-[var(--font-display)] text-4xl text-[#f6f0df]">
-                Reasons to keep documenting
+                <LocalizedText k="homeReasonsTitle" />
               </h2>
             </div>
             <p className="max-w-3xl text-base leading-7 text-[#c7bda2]">
-              The front page rewards preservation work: rare finds, complete
-              systems, restoration activity and historically important machines can
-              all surface here.
+              <LocalizedText k="homeReasonsIntro" />
             </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             {[
-              ["Oldest machine", oldestPart?.name ?? "Awaiting the first dated entry"],
-              ["Rarest processor", rareCpu?.name ?? "No rare CPU documented yet"],
-              [
-                "Largest collection",
-                largestCollection
+              {
+                labelKey: "homeOldestMachine",
+                value: oldestPart?.name ?? <LocalizedText k="homeOldestFallback" />,
+              },
+              {
+                labelKey: "homeRarestProcessor",
+                value: rareCpu?.name ?? <LocalizedText k="homeRareCpuFallback" />,
+              },
+              {
+                labelKey: "homeLargestCollection",
+                value: largestCollection
                   ? `${largestCollection.name} / ${largestCollection.partsCount} parts`
-                  : "No public collection yet",
-              ],
-              ["Last restored system", restorationExamples[0]],
-              ["Machine of the week", machineOfWeek?.name ?? "Nominate the first build"],
-            ].map(([label, value]) => (
-              <div key={label} className="border border-[#3c3325] bg-[#11100d]/95 p-5">
+                  : <LocalizedText k="homeNoPublicCollection" />,
+              },
+              {
+                labelKey: "homeLastRestoredSystem",
+                value: <LocalizedText k={restorationExampleKeys[0]} />,
+              },
+              {
+                labelKey: "homeMachineOfWeek",
+                value: machineOfWeek?.name ?? <LocalizedText k="homeMachineFallback" />,
+              },
+            ].map((item) => (
+              <div key={item.labelKey} className="border border-[#3c3325] bg-[#11100d]/95 p-5">
                 <p className="text-[0.65rem] font-black uppercase tracking-[0.3em] text-[#b59b63]">
-                  {label}
+                  <LocalizedText k={item.labelKey} />
                 </p>
                 <p className="mt-4 text-sm font-semibold leading-6 text-[#f6f0df]">
-                  {value}
+                  {item.value}
                 </p>
               </div>
             ))}
@@ -342,14 +352,14 @@ export default async function Home() {
             <div className="mb-5 flex items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#b59b63]">
-                  Featured collections
+                  <LocalizedText k="homeFeaturedCollections" />
                 </p>
                 <h2 className="mt-3 font-[var(--font-display)] text-3xl text-[#f6f0df]">
-                  From private shelves to public archive
+                  <LocalizedText k="homeFeaturedTitle" />
                 </h2>
               </div>
               <Link href="/configurations" className="text-xs font-bold uppercase tracking-[0.24em] text-[#b7e0a4]">
-                Browse all
+                <LocalizedText k="homeBrowseAll" />
               </Link>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -376,7 +386,10 @@ export default async function Home() {
                         {config.name}
                       </p>
                       <p className="mt-2 text-xs uppercase tracking-[0.24em] text-[#b59b63]">
-                        {`${config.partsCount} parts / by ${config.ownerName}`}
+                        <LocalizedText
+                          k="homePartsByOwner"
+                          params={{ count: config.partsCount, owner: config.ownerName }}
+                        />
                       </p>
                     </div>
                   </Link>
@@ -393,7 +406,10 @@ export default async function Home() {
                     <div className="p-5">
                       <p className="text-lg font-bold text-[#f6f0df]">{entry}</p>
                       <p className="mt-2 text-xs uppercase tracking-[0.24em] text-[#b59b63]">
-                        {`${index + 8} systems / seeking curator`}
+                        <LocalizedText
+                          k="homeSystemsSeekingCurator"
+                          params={{ count: index + 8 }}
+                        />
                       </p>
                     </div>
                   </Link>
@@ -403,7 +419,7 @@ export default async function Home() {
 
           <aside className="border border-[#6fa36f]/30 bg-[#0b120c] p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#6fa36f]">
-              Rare hardware spotlight
+              <LocalizedText k="homeRareSpotlight" />
             </p>
             {rareSpotlight ? (
               <Link href={`/parts/${rareSpotlight.id}`} className="group mt-5 block">
@@ -418,17 +434,17 @@ export default async function Home() {
                   {rareSpotlight.name}
                 </h3>
                 <p className="mt-3 text-sm uppercase tracking-[0.24em] text-[#b59b63]">
-                  {categoryLabels[rareSpotlight.category]} / {rareSpotlight.yearEra ?? "Era unknown"}
+                  {categoryLabels[rareSpotlight.category]} /{" "}
+                  {rareSpotlight.yearEra ?? <LocalizedText k="homeEraUnknown" />}
                 </p>
                 <p className="mt-4 text-sm leading-7 text-[#c7bda2]">
                   {rareSpotlight.description ??
-                    "A documented piece of computing history from the public archive."}
+                    <LocalizedText k="homeRareDescriptionFallback" />}
                 </p>
               </Link>
             ) : (
               <p className="mt-5 text-sm leading-7 text-[#c7bda2]">
-                Add Voodoo cards, XT motherboards, Apple II hardware, industrial
-                SBCs or prototype hardware to activate the spotlight.
+                <LocalizedText k="homeRareEmpty" />
               </p>
             )}
           </aside>
@@ -437,18 +453,17 @@ export default async function Home() {
         <section className="grid gap-8 border-y border-[#3c3325] bg-[#0d0c0a] px-4 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#b59b63]">
-              Recent restorations
+              <LocalizedText k="homeRecentRestorations" />
             </p>
             <h2 className="mt-3 font-[var(--font-display)] text-3xl text-[#f6f0df]">
-              Every repair is part of the record
+              <LocalizedText k="homeRestorationsTitle" />
             </h2>
             <p className="mt-4 max-w-xl text-sm leading-7 text-[#c7bda2]">
-              Track capacitor replacements, repairs, battery damage cleanup,
-              retro rebuilds and successful boot tests with notes and photos.
+              <LocalizedText k="homeRestorationsIntro" />
             </p>
           </div>
           <div className="grid gap-3">
-            {restorationExamples.map((item, index) => (
+            {restorationExampleKeys.map((item, index) => (
               <div
                 key={item}
                 className="grid grid-cols-[auto_1fr] gap-4 border border-[#3c3325] bg-[#11100d] p-4"
@@ -456,7 +471,11 @@ export default async function Home() {
                 <span className="flex h-9 w-9 items-center justify-center border border-[#6fa36f]/50 font-[var(--font-display)] text-[#b7e0a4]">
                   {index + 1}
                 </span>
-                <p className="text-sm leading-6 text-[#f6f0df]">{item}</p>
+                <LocalizedText
+                  as="p"
+                  className="text-sm leading-6 text-[#f6f0df]"
+                  k={item}
+                />
               </div>
             ))}
           </div>
@@ -465,10 +484,10 @@ export default async function Home() {
         <section className="grid gap-10 px-4 py-14 sm:px-6 lg:px-8">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#6fa36f]">
-              Explore the archive
+              <LocalizedText k="homeExploreArchive" />
             </p>
             <h2 className="mt-3 font-[var(--font-display)] text-3xl text-[#f6f0df]">
-              Browse by era and platform
+              <LocalizedText k="homeBrowseEraPlatform" />
             </h2>
           </div>
           <div className="grid gap-4 md:grid-cols-5">
@@ -482,10 +501,10 @@ export default async function Home() {
                   {era.label}
                 </p>
                 <p className="mt-4 text-sm font-semibold text-[#f6f0df]">
-                  {era.tone}
+                  <LocalizedText k={era.toneKey} />
                 </p>
                 <p className="mt-3 text-xs leading-5 text-[#c7bda2]">
-                  {era.hardware}
+                  <LocalizedText k={era.hardwareKey} />
                 </p>
               </Link>
             ))}
@@ -506,22 +525,23 @@ export default async function Home() {
         <section className="grid gap-8 px-4 pb-14 sm:px-6 lg:grid-cols-[1fr_1fr] lg:px-8">
           <div className="border border-[#3c3325] bg-[#11100d] p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#b59b63]">
-              Why PCConfigHub?
+              <LocalizedText k="homeWhy" />
             </p>
             <h2 className="mt-3 font-[var(--font-display)] text-3xl text-[#f6f0df]">
-              Not another disappearing forum thread
+              <LocalizedText k="homeWhyTitle" />
             </h2>
             <p className="mt-5 text-base leading-8 text-[#c7bda2]">
-              Social posts vanish into feeds. Forum images break. Notes stay on
-              private drives. PCConfigHub keeps collections organized,
-              searchable, linked and preserved for the people who will need them
-              next.
+              <LocalizedText k="homeWhyIntro" />
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {preservationFeatures.map((feature) => (
+            {preservationFeatureKeys.map((feature) => (
               <div key={feature} className="border border-[#3c3325] bg-[#0d0c0a] p-4">
-                <p className="text-sm font-bold text-[#f6f0df]">{feature}</p>
+                <LocalizedText
+                  as="p"
+                  className="text-sm font-bold text-[#f6f0df]"
+                  k={feature}
+                />
               </div>
             ))}
           </div>
@@ -530,20 +550,19 @@ export default async function Home() {
         <section className="px-4 pb-16 sm:px-6 lg:px-8">
           <div className="border border-[#d7b56d]/40 bg-[#15110a] p-8 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#b59b63]">
-              Contribute to the archive
+              <LocalizedText k="homeContribute" />
             </p>
             <h2 className="mx-auto mt-4 max-w-3xl font-[var(--font-display)] text-4xl text-[#f6f0df]">
-              Your collection deserves to be preserved.
+              <LocalizedText k="homeContributeTitle" />
             </h2>
             <p className="mx-auto mt-5 max-w-3xl text-base leading-8 text-[#d4c8a9]">
-              Whether you own a single XT motherboard or a room full of vintage
-              computers, help document computing history.
+              <LocalizedText k="homeContributeIntro" />
             </p>
             <Link
               href={ctaHref}
               className="mt-7 inline-flex rounded-sm border border-[#d7b56d] bg-[#d7b56d] px-7 py-4 text-xs font-black uppercase tracking-[0.22em] text-[#15110a]"
             >
-              Create Your Collection
+              <LocalizedText k="homeCreateYourCollection" />
             </Link>
           </div>
         </section>

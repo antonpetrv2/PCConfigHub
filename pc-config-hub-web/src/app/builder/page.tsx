@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { apiFetch } from "@/lib/api/server-fetch";
 import BuilderClient from "@/app/builder/builder-client";
+import LocalizedText from "@/app/localized-text";
 import type { ApiCategory } from "@/lib/api/types";
 
 export default async function BuilderPage() {
@@ -30,21 +31,19 @@ export default async function BuilderPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-16">
         <header className="flex flex-col gap-4">
           <p className="text-xs uppercase tracking-[0.4em] text-[#b3b7d4]">
-            Configuration lab
+            <LocalizedText k="builderEyebrow" />
           </p>
           <h1 className="font-[var(--font-display)] text-4xl text-[#f2f3ff]">
-            Build a new configuration
+            <LocalizedText k="builderTitle" />
           </h1>
           <p className="max-w-2xl text-sm text-[#b3b7d4]">
-            {user
-              ? "Mix public and private parts, then validate compatibility before saving."
-              : "Select from public parts to explore compatibility. Sign in to save configurations."}
+            <LocalizedText k={user ? "builderIntroUser" : "builderIntroGuest"} />
           </p>
         </header>
 
         {loadError ? (
           <div className="rounded-3xl border border-[#ff5bf1]/40 bg-[#1a1122] px-5 py-4 text-sm text-[#ff5bf1]">
-            Unable to load parts right now. Check server logs for details.
+            <LocalizedText k="builderLoadError" />
           </div>
         ) : (
           <BuilderClient parts={parts} isLoggedIn={Boolean(user)} />

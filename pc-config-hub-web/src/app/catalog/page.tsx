@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import AddPartLauncher from "@/app/parts/add-part-launcher";
 import CatalogResults from "@/app/catalog/catalog-results";
+import LocalizedText from "@/app/localized-text";
 import { categoryLabels, categoryOrder } from "@/lib/api/catalog";
 import type { ApiCategory } from "@/lib/api/types";
 import { listParts } from "@/services/api/parts-service";
@@ -36,16 +37,14 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         <header className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#0f0e1b]/70 p-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.4em] text-[#b3b7d4]">
-              Hardware collection
+              <LocalizedText k="catalogEyebrow" />
             </p>
             <div className="mt-2 flex flex-wrap items-end gap-x-5 gap-y-2">
               <h1 className="font-[var(--font-display)] text-3xl text-[#f2f3ff]">
-                Catalog
+                <LocalizedText k="catalogTitle" />
               </h1>
               <p className="pb-1 text-sm text-[#b3b7d4]">
-                {user
-                  ? "Showing public components plus your private inventory."
-                  : "Showing public components only. Sign in to see your private parts."}
+                <LocalizedText k={user ? "catalogIntroUser" : "catalogIntroGuest"} />
               </p>
             </div>
           </div>
@@ -54,10 +53,10 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             <div className="flex flex-col gap-3 text-sm text-[#b3b7d4] lg:max-w-xl lg:flex-row lg:items-center lg:justify-end">
               <div className="min-w-0">
                 <p className="text-xs uppercase tracking-[0.3em] text-[#30f2ff]">
-                  Upload parts
+                  <LocalizedText k="catalogUploadEyebrow" />
                 </p>
                 <p className="mt-1 text-sm">
-                  Add hardware with specs, tags, logs, and photos.
+                  <LocalizedText k="catalogUploadHelp" />
                 </p>
               </div>
               <AddPartLauncher />
@@ -67,7 +66,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.3em] text-[#b3b7d4]">
-            Categories
+            <LocalizedText k="catalogCategories" />
           </p>
           <div className="flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-[#121126]/80 p-2">
             <Link
@@ -78,7 +77,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                   : "border border-white/10 text-[#b3b7d4]"
               }`}
             >
-              All
+              <LocalizedText k="catalogAll" />
             </Link>
             {categoryOrder.map((item) => (
               <Link
